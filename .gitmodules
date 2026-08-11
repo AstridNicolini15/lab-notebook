@@ -1,3 +1,6 @@
 [submodule "physion"]
 	path = physion
 	url = https://github.com/AstridNicolini15/physion
+[submodule "suite2p"]
+	path = suite2p
+	url = https://github.com/AstridNicolini15/suite2p

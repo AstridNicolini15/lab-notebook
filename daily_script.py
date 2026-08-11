@@ -6,9 +6,12 @@ Created on Tue May  5 16:31:34 2026
 """
 # %% 
 import numpy as np
-import physion
+import os, sys , shutil 
+sys.path += ['./physion/src']
+
 from physion.analysis.read_NWB import scan_folder_for_NWBfiles, Data
 import matplotlib.pyplot as plt
+import physion
 
 #%%
 
@@ -33,6 +36,38 @@ Episodes = EpisodeData(data,
                         quantities=['dFoF','running'], 
                         protocol_name = data.protocols[0],
                         verbose=False)
+
+#%% 
+
+dFoF_parameters = dict(\
+        roi_to_neuropil_fluo_inclusion_factor=1.15,
+        neuropil_correction_factor = 0.7,
+        method_for_F0 = 'sliding_percentile',
+        percentile=5., # percent
+        sliding_window = 5*60, # seconds
+        with_correctedFluo_and_F0=True,
+)
+data.build_dFoF(**dFoF_parameters, verbose=False)
+
+
+    
+
+F = data.dFoF 
+
+batch_size = 500
+
+tau = 1.3 #in seconds
+
+fs = np.mean(np.diff(data.t_dFoF))
+
+S = oasis(F, batch_size, tau, fs)
+
+i_start = 1000
+i_stop = 1040
+plt.figure(figsize=(6,6))
+plt.plot(data.t_dFoF[i_start:i_stop], S[0,i_start:i_stop])
+plt.plot(data.t_dFoF[i_start:i_stop], data.dFoF[0,i_start:i_stop])
+
 #%%
 
 
