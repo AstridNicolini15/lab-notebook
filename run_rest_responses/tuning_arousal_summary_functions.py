@@ -11,89 +11,6 @@ from physion.analysis.read_NWB\
 from physion.analysis.episodes.build import EpisodeData
 from physion.analysis.protocols.orientation_tuning import *
 from run_rest_responses.contrast_arousal_summary_functions import * 
-
-#%%
-
-def plot_orientation_tuning_curve_with_uncertainty(keys,
-                              arousal_keys,
-                              summary_path='',
-                              average_by='sessions',
-                              uncertainties = ['std'],
-                              colors = None, 
-                              plot_perc_run = True,
-                              group_ROIs = False,
-                              gaussian_fit = True,
-                              base_path = '',
-                              ylims=[[0,1]]) : 
-        
-    if colors is None:
-        colors = pt.plt.rcParams['axes.prop_cycle'].by_key()['color']
-        
-    folder = keys[0][:-10]
-
-    for uncertainty in uncertainties : 
-
-        fig_args={'right':25, 'ax_scale':(1.2, 1.7)}
-        
-        fig, ax = pt.figure(**fig_args)
-        inset = pt.inset(ax, [2.5,0,1,1])
-        inset2 = pt.inset(ax, [4.5,0,1,1])
-
-        axes = [ax, inset, inset2]
-        titles = [x[:-1] for x in arousal_keys]
-
-        if type(keys)==str:
-            keys, colors = [keys], [colors[0]]
-
-        if plot_perc_run == True : 
-            perc_ep = compute_perc_ep_run(folder)
-            fig.text(x=0, y=-0.2, s='%' + ' of episodes considered runned : ' + str(perc_ep))
-
-        fig.text(x=0, y=1.1, s=folder)
-        fig.text(x=0, y=-0.1, s= 'contrast 1.0', color = colors[0])
-        fig.text(x=0.12, y=-0.1, s= 'contrast 0.5', color = colors[1])
-        fig.text(x=0, y=-0.3, s= 'error bars = ' + uncertainty)
-
-
-        x = np.linspace(-30, 180-30, 100)
-        for k, arousal_cond in enumerate(arousal_keys): 
-
-            for key, color in zip(keys, colors):
-
-                # load data
-                Tunings = np.load(summary_path + '/' + arousal_cond + 'Tunings_%s.npy' % key, allow_pickle=True)   
-
-                Responses = get_tuning_responses(Tunings, average_by=average_by) #is normed
-                # Gaussian Fit
-                C, func = fit_gaussian(Tunings[0]['shifted_angle'],
-                                        np.nanmean(Responses, axis=0))
-
-                axes[k].plot(x, func(x), lw=2, alpha=.5, color=color)
-
-                if uncertainty == 'std' : 
-                    uncertainty_sy = np.nanstd(Responses, axis=0, ddof = 1)
-
-                elif uncertainty == 'sem' : 
-                    uncertainty_sy = stats.sem(Responses, axis=0, nan_policy = 'omit', ddof = 1) 
-
-                elif uncertainty == 'session sem with propagation and independance hypothesis' : 
-                    uncertainty_sy = session_sem_with_indepedance_hypothesis_universal(Tunings)
-
-                pt.scatter(Tunings[0]['shifted_angle'], np.nanmean(Responses, axis=0), 
-                sy=uncertainty_sy, 
-                color=color, ax=axes[k], ms=2)
-        
-
-            pt.set_plot(axes[k], xticks=Tunings[0]['shifted_angle'], 
-                        #yticks=np.arange(3)*0.5, 
-                        ylim=ylims,
-                        ylabel='norm. $\\delta$ $\\Delta$F/F',  
-                        xlabel='angle ($^o$) from pref.',
-                        title=titles[k], 
-                        xticks_labels=['%i' % a if (a in [0, 90]) else '' for a in Tunings[0]['shifted_angle'] ])
-
-    return fig, axes
-
 #%%
 
 def session_sem_with_indepedance_hypothesis_universal(Summaries, average_by = 'sessions') : #done very detailed because easily confusable
@@ -241,7 +158,7 @@ def compute_tuning_response_per_cells(data, Episodes,
 
     # find preferred angle:
     ipref = np.argmax(summary['value'], axis=1).flatten()
-    print(ipref)
+    #print(ipref)
 
     prefered_angles = np.array(\
             [summary['angle'][i] for i in ipref])
@@ -374,6 +291,89 @@ def compute_tuning_response_per_cells_with_arousal_cond(data, Episodes,
         
         #Tuning['significant_ROIs'] = significant > 0 
     return Tuning 
+
+#####PLOT######
+
+
+def plot_orientation_tuning_curve_with_uncertainty(keys,
+                              arousal_keys,
+                              summary_path='',
+                              average_by='sessions',
+                              uncertainties = ['std'],
+                              colors = None, 
+                              plot_perc_run = True,
+                              group_ROIs = False,
+                              gaussian_fit = True,
+                              base_path = '',
+                              ylims=[[0,1]]) : 
+        
+    if colors is None:
+        colors = pt.plt.rcParams['axes.prop_cycle'].by_key()['color']
+        
+    folder = keys[0][:-10]
+
+    for uncertainty in uncertainties : 
+
+        fig_args={'right':25, 'ax_scale':(1.2, 1.7)}
+        
+        fig, ax = pt.figure(**fig_args)
+        inset = pt.inset(ax, [2.5,0,1,1])
+        inset2 = pt.inset(ax, [4.5,0,1,1])
+
+        axes = [ax, inset, inset2]
+        titles = [x[:-1] for x in arousal_keys]
+
+        if type(keys)==str:
+            keys, colors = [keys], [colors[0]]
+
+        if plot_perc_run == True : 
+            perc_ep = compute_perc_ep_run(folder)
+            fig.text(x=0, y=-0.2, s='%' + ' of episodes considered runned : ' + str(perc_ep))
+
+        fig.text(x=0, y=1.1, s=folder)
+        fig.text(x=0, y=-0.1, s= 'contrast 1.0', color = colors[0])
+        fig.text(x=0.12, y=-0.1, s= 'contrast 0.5', color = colors[1])
+        fig.text(x=0, y=-0.3, s= 'error bars = ' + uncertainty)
+
+
+        x = np.linspace(-30, 180-30, 100)
+        for k, arousal_cond in enumerate(arousal_keys): 
+
+            for key, color in zip(keys, colors):
+
+                # load data
+                Tunings = np.load(summary_path + '/' + arousal_cond + 'Tunings_%s.npy' % key, allow_pickle=True)   
+
+                Responses = get_tuning_responses(Tunings, average_by=average_by) #is normed
+                # Gaussian Fit
+                C, func = fit_gaussian(Tunings[0]['shifted_angle'],
+                                        np.nanmean(Responses, axis=0))
+
+                axes[k].plot(x, func(x), lw=2, alpha=.5, color=color)
+
+                if uncertainty == 'std' : 
+                    uncertainty_sy = np.nanstd(Responses, axis=0, ddof = 1)
+
+                elif uncertainty == 'sem' : 
+                    uncertainty_sy = stats.sem(Responses, axis=0, nan_policy = 'omit', ddof = 1) 
+
+                elif uncertainty == 'session sem with propagation and independance hypothesis' : 
+                    uncertainty_sy = session_sem_with_indepedance_hypothesis_universal(Tunings)
+
+                pt.scatter(Tunings[0]['shifted_angle'], np.nanmean(Responses, axis=0), 
+                sy=uncertainty_sy, 
+                color=color, ax=axes[k], ms=2)
+        
+
+            pt.set_plot(axes[k], xticks=Tunings[0]['shifted_angle'], 
+                        #yticks=np.arange(3)*0.5, 
+                        ylim=ylims,
+                        ylabel='norm. $\\delta$ $\\Delta$F/F',  
+                        xlabel='angle ($^o$) from pref.',
+                        title=titles[k], 
+                        xticks_labels=['%i' % a if (a in [0, 90]) else '' for a in Tunings[0]['shifted_angle'] ])
+
+    return fig, axes
 
 
 def plot_orientation_tuning_curve_with_uncertainty_all_pop_in_one_graph(folders,
