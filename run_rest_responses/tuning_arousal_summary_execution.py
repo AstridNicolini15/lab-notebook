@@ -153,14 +153,12 @@ def process_file(filename, i, c,  arousal_cond = 'Run'):
                                                         response_significance_threshold = response_significance_threshold, 
                                                         contrast =float(c.split('contrast-')[1][:3]),
                                                         nMin_episodes = nMin_episodes,
-                                                        start_angle=-22.5, 
-                                                        angle_range=180,
                                                         verbose=False)
             
             Tuning['datafile'] = filename
             Tuning['nROIs_original'] = data.original_nROIs
             Tuning['nROIs_final'] = data.nROIs
-            
+            Tuning['nROIs_responsive'] = np.sum(Tuning['significant_ROIs'])
             Tuning['subject'] = data.nwbfile.subject.subject_id
             
             print('      [v] --> included, n=%i ROIs ' % data.nROIs)
