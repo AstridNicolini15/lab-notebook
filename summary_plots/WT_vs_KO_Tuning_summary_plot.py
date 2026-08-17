@@ -69,9 +69,16 @@ def plot_tuning_responses_many_pop(folders, colors, ax, special_dict = None, sum
             func, uncertainty_sy, Responses, x_angles, n_cells = get_gaussian_fit_and_uncertainty(folder, key, special_dict, summary_path)
 
             ax.plot(x, func(x), lw=4, alpha=.5, color=colors[i][j])
-            pt.scatter(x_angles, np.nanmean(Responses, axis=0), 
-                        sy=uncertainty_sy, 
-                        color=colors[i][j], ax=ax, ms=ms)
+            ax.scatter(x_angles, np.nanmean(Responses, axis=0),
+                        color=colors[i][j], s = 30)
+            ax.errorbar(x_angles, np.nanmean(Responses, axis=0),
+                        yerr=uncertainty_sy,
+                        elinewidth = 2,
+                        fmt = '.',
+                        color=colors[i][j], ms = ms)
+           # pt.scatter(x_angles, np.nanmean(Responses, axis=0), 
+            #            sy=uncertainty_sy, 
+             #           color=colors[i][j], ax=ax, ms=ms)
             ax.annotate(text = 'N= ' + str(n_cells), xy = (120,1-(0.15*i)-(0.075*j)), color = colors[i][j], fontsize = 13)
     ax.set_xticks(ticks = x_angles, labels = ['%i' % a if (a in [0, 90]) else '' for a in x_angles], fontsize = 13)
     ax.set_ylabel('norm. $\\delta$ $\\Delta$F/F', fontsize = 13)
@@ -83,10 +90,15 @@ def get_gaussian_fit_and_uncertainty(folder, key, special_dict = None, summary_p
     
     if special_dict is not None : 
         Tunings = np.load(summary_path + '/' + special_dict['name'] + 'Tunings_%s.npy' % key, allow_pickle=True) 
-
     else : 
-        Tunings = np.load(summary_path + '/Tunings_%s.npy' % key, allow_pickle=True)   
-    uncertainty_sy = session_sem_with_indepedance_hypothesis_universal(Tunings)
+        Tunings = np.load(summary_path + '/Tunings_%s.npy' % key, allow_pickle=True)  
+
+    if 'std-values' in Tunings[0].keys() :
+        uncertainty_sy = session_sem_with_indepedance_hypothesis_universal(Tunings)
+    else :
+        print('no std values, uncertainty is set to None')
+        uncertainty_sy = None
+
     Responses = get_tuning_responses(Tunings, average_by='sessions')
 
     # Gaussian Fit
