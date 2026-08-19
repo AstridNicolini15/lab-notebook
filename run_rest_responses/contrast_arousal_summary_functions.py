@@ -171,6 +171,10 @@ def get_arousal_keys(create_arousal_summaries):
 
     return arousal_keys
 
+def check_presence_locomotion_values(data):
+    if np.sum(data.running) == 0 : 
+        raise ValueError('No locomotion values present in the datafile')
+
 def compute_group_contrast(Episodes, grouped_contrast_values = [0.05,1]) : 
     #artificially modify episodes contrast refs as if there were only 2 contrasts
     #not very pretty but work.. 

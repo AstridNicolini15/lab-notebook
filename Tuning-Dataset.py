@@ -13,7 +13,11 @@ from physion.analysis.read_NWB\
 from physion.analysis.episodes.build import EpisodeData
 from physion.analysis.protocols.orientation_tuning\
                 import compute_tuning_response_per_cells
-from run_rest_responses.contrast_arousal_summary_functions import compute_arousal_mask, get_summary_prefix_name, get_filtering_cond, get_arousal_keys
+from run_rest_responses.contrast_arousal_summary_functions import (compute_arousal_mask, 
+                                                                   get_summary_prefix_name, 
+                                                                   get_filtering_cond, 
+                                                                   get_arousal_keys, 
+                                                                   check_presence_locomotion_values)
 
 parallelized, debug = False, False 
 
@@ -56,6 +60,12 @@ def process_file(filename, i, c, arousal_cond):
     if data.nROIs>=nMIN_ROIs:
 
         try:
+
+            if arousal_cond != '':
+                quantities += ['running']
+                data.build_running_speed(verbose=False)
+                check_presence_locomotion_values(data)
+        
             Episodes = EpisodeData(data, 
                                     quantities=quantities,
                                     protocol_name=protocol_name, 
@@ -64,7 +74,7 @@ def process_file(filename, i, c, arousal_cond):
             filtering_cond = get_filtering_cond(arousal_cond, Episodes)
             
             Tuning = compute_tuning_response_per_cells(data, Episodes, 
-                                                        quantity=quantities, 
+                                                        quantity=quantity, 
                                                         stat_test_props = stat_test_props, 
                                                         response_significance_threshold =\
                                                             response_significance_threshold, 
@@ -82,6 +92,11 @@ def process_file(filename, i, c, arousal_cond):
                                  'Tuning-%s-%i.npy' % (c, i)),
                     Tuning)
             print('      [v] --> included, n=%i ROIs ' % data.nROIs)
+
+        except ValueError as e:
+            print(f"Error: {e}")
+            print('File: %s' % filename, ' discarded')
+        
         except BaseException as be:
             print('                        [-------------------------------]')
             print(be)
@@ -170,7 +185,7 @@ if __name__=='__main__':
                     #####################################
                     ###### UN-PARALLELIZED VERSION ######
                     for i, f in enumerate(DATASET['files'][cond]):
-                        process_file(f, i, c)
+                        process_file(f, i, c, arousal_cond)
                     #####################################
 
                 # now that we have stored all datafile outputs

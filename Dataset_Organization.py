@@ -4,11 +4,11 @@ folders = [
     #"SST-cells_cond-GluN1-KO_Adult_V1",
     #"PV-cells_WT_Adult_V1", 
     # "PV-cells_WT_Young_V1", 
-    
     # "PV-cells_cond-GluN1-KO_Adult_V1", 
     #"PYR-PV-SynGCaMP_WT_Young_V1",
-    # "SST-cells_cond-GluN1-KO_Young_V1",
-    "SST-cells_WT_Adult_V1",
+    #"SST-cells_cond-GluN1-KO_Young_V1",
+    "SST-cells_cond-GluN1-KO_Adult_V1"
+    #"SST-cells_WT_Adult_V1",
     # "SST-cells_WT_Young_V1",
     # "SST-cells_cond-GluN1-KO_Adult_V1_Taddy",
     # "SST-cells_WT_Adult_V1_Taddy"
@@ -24,8 +24,10 @@ summary_folder = "/home/user/DATA/Astrid/deconvolved_summary"
 
 
 # age intervals in Yound
-AGE_INTERVALS = [\
-    (15,19), (20,23), (24,27), (16,21), (22,27)]
+#AGE_INTERVALS = [\
+#    (15,19), (20,23), (24,27), (16,21), (22,27)]
+
+AGE_INTERVALS = []
 
 # to be a valid dataset:
 nMIN_DATAFILES = 2
