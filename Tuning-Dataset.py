@@ -17,7 +17,7 @@ from physion.analysis.protocols.orientation_tuning\
 parallelized, debug = False, False 
 
 # load the dataset locations:
-from Dataset_Organization import datasets_func, summary_folder
+from Dataset_Organization import datasets_func, quantity, summary_prefix_name, summary_folder
 datasets = datasets_func('contrast', [0.5, 1.0])
 
 from Preprocessing_Settings import get_dFoF_params
@@ -43,7 +43,9 @@ def process_file(filename, i, c):
     data = Data(filename, verbose=False)
     protocol_name=[p for p in data.protocols if '8orientation' in p][0]
     data.build_dFoF(**dFoF_parameters, verbose=False)
-    data.build_Deconvolved()
+
+    if quantity == 'Deconvolved':
+        data.build_Deconvolved()
 
     # FIX: Temporarily disable running_speed to bypass the resampling unpack bug
     quantities = [quantity]
@@ -176,7 +178,7 @@ if __name__=='__main__':
                     Tunings.append(Tuning)
 
             # # saving data
-            np.save(os.path.join(summary_folder, 'Deconvolved_Tunings_%s.npy' % c), Tunings)
+            np.save(os.path.join(summary_folder, summary_prefix_name + 'Tunings_%s.npy' % c), Tunings)
 
         else:
             print()
@@ -191,7 +193,7 @@ if __name__=='__main__':
     # shutil.rmtree(os.path.join(summary_folder, 'temp'))
 
 # %%
-if True:
+if False:
     from Dataset_Organization import summary_folder
     from physion.analysis.protocols.orientation_tuning\
         import plot_orientation_tuning_curve, plot_selectivity

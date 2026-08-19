@@ -18,8 +18,10 @@ base_path = os.path.expanduser('~/CURATED/Cibele/')
 #summary_folder = os.path.join(os.path.expanduser('~'), 
                              # 'CURATED', 'Cibele', 'summary')
 
+quantity = 'Deconvolved' # 'dFoF' or 'Deconvolved'
+summary_prefix_name = "Deconvolved_" # 'Deconvolved_' for quantity = 'Deconvolved', '' for quantity = 'dFoF', automatic change for arousal-dependant-summaries 
 summary_folder = "/home/user/DATA/Astrid/deconvolved_summary"
-quantity = 'Deconvolved'
+
 
 # age intervals in Yound
 AGE_INTERVALS = [\
