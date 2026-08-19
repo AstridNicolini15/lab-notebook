@@ -13,17 +13,18 @@ from physion.analysis.read_NWB\
 from physion.analysis.episodes.build import EpisodeData
 from physion.analysis.protocols.orientation_tuning\
                 import compute_tuning_response_per_cells
+from run_rest_responses.contrast_arousal_summary_functions import compute_arousal_mask, get_summary_prefix_name, get_filtering_cond, get_arousal_keys
 
 parallelized, debug = False, False 
 
 # load the dataset locations:
-from Dataset_Organization import datasets_func, quantity, summary_prefix_name, summary_folder
+from Dataset_Organization import datasets_func, quantity, summary_folder, create_arousal_summaries
 datasets = datasets_func('contrast', [0.5, 1.0])
 
 from Preprocessing_Settings import get_dFoF_params
 
 # %%
-def process_file(filename, i, c):
+def process_file(filename, i, c, arousal_cond):
 
     # to be a valid datafile:
     nMIN_ROIs = 4
@@ -59,12 +60,15 @@ def process_file(filename, i, c):
                                     quantities=quantities,
                                     protocol_name=protocol_name, 
                                     verbose=debug)
-
+            
+            filtering_cond = get_filtering_cond(arousal_cond, Episodes)
+            
             Tuning = compute_tuning_response_per_cells(data, Episodes, 
                                                         quantity=quantities, 
                                                         stat_test_props = stat_test_props, 
                                                         response_significance_threshold =\
                                                             response_significance_threshold, 
+                                                        filtering_cond=filtering_cond,
                                                         contrast =\
                                                             float(c.split('contrast-')[1][:3]),
                                                         verbose=debug)
@@ -104,93 +108,98 @@ if __name__=='__main__':
     Nstart = 0
     Nend = len(datasets)
 
-    for n in range(Nstart, Nend):
+    arousal_keys = get_arousal_keys(create_arousal_summaries)
+    for arousal_cond in arousal_keys : 
+        
+        for n in range(Nstart, Nend):
 
-        c = list(datasets.keys())[n]
+            c = list(datasets.keys())[n]
 
-        table = datasets[c]['datafolder'].replace('NWBs', 'DataTable.xlsx')
+            table = datasets[c]['datafolder'].replace('NWBs', 'DataTable.xlsx')
 
-        dataset_table, subjects_table, analysis =\
-                read_spreadsheet(table, get_metadata_from='table')
-        print()
-        print()
-        print('=================================================================')
-        print('-----------------------------------------------------------------')
-        print('------- %i) computing : %s ' % (n+1, c))
-        print('-----------------------------------------------------------------')
-        print()
+            dataset_table, subjects_table, analysis =\
+                    read_spreadsheet(table, get_metadata_from='table')
+            print()
+            print()
+            print('=================================================================')
+            print('-----------------------------------------------------------------')
+            print('------- %i) computing : %s ' % (n+1, c))
+            print('-----------------------------------------------------------------')
+            print()
 
-        DATASET = scan_folder_for_NWBfiles(datasets[c]['datafolder'])
+            DATASET = scan_folder_for_NWBfiles(datasets[c]['datafolder'])
 
-        #   FILTER:
-        # ----------
-        # 1) protocol type: orientation tuning
-        cond = np.array([np.sum(['8orientation' in p for p in protocols])\
-                        for protocols in DATASET['protocols']], dtype=bool)
-        # 2) age condition (not None only if young)
-        if (datasets[c]['age_interval'] is not None):
-            cond = cond &\
-                (DATASET['ages']>=datasets[c]['age_interval'][0]) &\
-                (DATASET['ages']<=datasets[c]['age_interval'][1])
+            #   FILTER:
+            # ----------
+            # 1) protocol type: orientation tuning
+            cond = np.array([np.sum(['8orientation' in p for p in protocols])\
+                            for protocols in DATASET['protocols']], dtype=bool)
+            # 2) age condition (not None only if young)
+            if (datasets[c]['age_interval'] is not None):
+                cond = cond &\
+                    (DATASET['ages']>=datasets[c]['age_interval'][0]) &\
+                    (DATASET['ages']<=datasets[c]['age_interval'][1])
 
-        if np.sum(cond)>0:
-            # MINIMUM NUMBER OF SESSION (1 for now)
+            if np.sum(cond)>0:
+                # MINIMUM NUMBER OF SESSION (1 for now)
 
-            if parallelized:
-                ################################################
-                ###    parallelization here !   #################
-                ################################################
-                nruns = int(len(DATASET['files'][cond])/cpus)+1
+                if parallelized:
+                    ################################################
+                    ###    parallelization here !   #################
+                    ################################################
+                    nruns = int(len(DATASET['files'][cond])/cpus)+1
 
-                for r in range(nruns):
-                    i0 = r*cpus
-                    imax = np.min([i0+cpus, len(DATASET['files'][cond])]) 
-                    print(' - running set of files %i:%i' % (i0, imax))
+                    for r in range(nruns):
+                        i0 = r*cpus
+                        imax = np.min([i0+cpus, len(DATASET['files'][cond])]) 
+                        print(' - running set of files %i:%i' % (i0, imax))
 
-                    # start the processes
-                    procs = []
-                    for i in range(i0,imax):
-                        proc = multiprocessing.Process(\
-                                            target=process_file, 
-                                            args=(DATASET['files'][cond][i], i, c))
-                        procs.append(proc)
-                        proc.start()
+                        # start the processes
+                        procs = []
+                        for i in range(i0,imax):
+                            proc = multiprocessing.Process(\
+                                                target=process_file, 
+                                                args=(DATASET['files'][cond][i], i, c, arousal_cond))
+                            procs.append(proc)
+                            proc.start()
 
-                    # complete the processes
-                    for proc in procs:
-                        proc.join()
-            else:
-                #####################################
-                ###### UN-PARALLELIZED VERSION ######
+                        # complete the processes
+                        for proc in procs:
+                            proc.join()
+                else:
+                    #####################################
+                    ###### UN-PARALLELIZED VERSION ######
+                    for i, f in enumerate(DATASET['files'][cond]):
+                        process_file(f, i, c)
+                    #####################################
+
+                # now that we have stored all datafile outputs
+                Tunings = []
                 for i, f in enumerate(DATASET['files'][cond]):
-                    process_file(f, i, c)
-                #####################################
 
-            # now that we have stored all datafile outputs
-            Tunings = []
-            for i, f in enumerate(DATASET['files'][cond]):
+                    if os.path.isfile(os.path.join(summary_folder, 'temp', 
+                                                    'Tuning-%s-%i.npy' % (c, i))):
+                        Tuning = np.load(os.path.join(summary_folder, 'temp', 
+                                                    'Tuning-%s-%i.npy' % (c, i)),
+                                            allow_pickle=True).item()
+                        Tunings.append(Tuning)
 
-                if os.path.isfile(os.path.join(summary_folder, 'temp', 
-                                                'Tuning-%s-%i.npy' % (c, i))):
-                    Tuning = np.load(os.path.join(summary_folder, 'temp', 
-                                                'Tuning-%s-%i.npy' % (c, i)),
-                                        allow_pickle=True).item()
-                    Tunings.append(Tuning)
+                # # saving data
+                summary_prefix_name = get_summary_prefix_name(quantity, arousal_cond)
 
-            # # saving data
-            np.save(os.path.join(summary_folder, summary_prefix_name + 'Tunings_%s.npy' % c), Tunings)
+                np.save(os.path.join(summary_folder, summary_prefix_name + 'Tunings_%s.npy' % c), Tunings)
 
-        else:
-            print()
-            print('   [!!]   DATASET NOT LARGE ENOUGH   [!!] ')
-            print('               only N=%i sessions available' %\
-                                        len(DATASET['files'][cond]))
-            print('   [!!]   DATASET not analyzed       [!!] ')
-            print()
+            else:
+                print()
+                print('   [!!]   DATASET NOT LARGE ENOUGH   [!!] ')
+                print('               only N=%i sessions available' %\
+                                            len(DATASET['files'][cond]))
+                print('   [!!]   DATASET not analyzed       [!!] ')
+                print()
 
-        print('-----------------------------------------------------------------')
-        print('=================================================================')
-    # shutil.rmtree(os.path.join(summary_folder, 'temp'))
+            print('-----------------------------------------------------------------')
+            print('=================================================================')
+        # shutil.rmtree(os.path.join(summary_folder, 'temp'))
 
 # %%
 if False:

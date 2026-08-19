@@ -129,6 +129,47 @@ def correct_missing_responses_and_stds_with_nans(Sensitivity, Episodes):
 
     return corrected_sensitivity
 
+def get_summary_prefix_name(quantity, arousal_cond):
+
+    if quantity == 'Deconvolved' : 
+        summary_prefix_name = "Deconvolved_"
+    elif quantity == 'dFoF' : 
+        summary_prefix_name = ""
+    else : 
+        raise ValueError("quantity should be either 'Deconvolved' or 'dFoF'")
+
+    if arousal_cond == 'Run' : 
+        summary_prefix_name += "Run_"
+    elif arousal_cond == 'Rest' : 
+        summary_prefix_name += "Rest_"
+    elif arousal_cond == '' :
+        summary_prefix_name += ""
+    else : 
+        raise ValueError("arousal_cond should be either 'Run', 'Rest' or ''")
+
+    return summary_prefix_name
+
+
+def get_filtering_cond(arousal_cond, Episodes):
+
+    if arousal_cond == 'Run' : 
+        filtering_cond =  compute_arousal_mask(Episodes)[0]
+
+    elif arousal_cond == 'Rest' : 
+        filtering_cond =  compute_arousal_mask(Episodes)[1]
+
+    elif arousal_cond == '' :
+        filtering_cond = None
+
+    return filtering_cond
+
+def get_arousal_keys(create_arousal_summaries):
+    if create_arousal_summaries : 
+        arousal_keys = ['Run', 'Rest']
+    else : 
+        arousal_keys = ['']
+
+    return arousal_keys
 
 def compute_group_contrast(Episodes, grouped_contrast_values = [0.05,1]) : 
     #artificially modify episodes contrast refs as if there were only 2 contrasts
