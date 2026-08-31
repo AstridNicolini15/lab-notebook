@@ -131,8 +131,8 @@ def correct_missing_responses_and_stds_with_nans(Sensitivity, Episodes):
 
 def get_summary_prefix_name(quantity, arousal_cond):
 
-    if quantity == 'Deconvolved' : 
-        summary_prefix_name = "Deconvolved_"
+    if quantity[:11] == 'Deconvolved' : 
+        summary_prefix_name = quantity
     elif quantity == 'dFoF' : 
         summary_prefix_name = ""
     else : 

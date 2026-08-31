@@ -49,9 +49,10 @@ def process_file(filename, i, c, arousal_cond):
     protocol_name=[p for p in data.protocols if '8orientation' in p][0]
     data.build_dFoF(**dFoF_parameters, verbose=False)
 
-    if quantity == 'Deconvolved':
-        data.build_Deconvolved()
-
+    if quantity[:11] == 'Deconvolved':
+        #setattr(data, quantity, data.correctedFluo - data.correctedFluo0)
+        data.build_Deconvolved(quantity = quantity)
+        
     # FIX: Temporarily disable running_speed to bypass the resampling unpack bug
     quantities = [quantity]
     # if 'Running-Speed' in data.nwbfile.acquisition:
