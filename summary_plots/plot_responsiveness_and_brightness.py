@@ -1,16 +1,5 @@
 #%%
-import os ,sys
-os.chdir('/home/user/lab-notebook/astrid')
-sys.path += ['./physion/src']
-import physion.utils.plot_tools as pt
-from physion.analysis.read_NWB\
-                         import scan_folder_for_NWBfiles, Data
-from physion.analysis.episodes.build import EpisodeData
-from physion.analysis.protocols.orientation_tuning import *
-from run_rest_responses.tuning_arousal_summary_functions import *
-import matplotlib.pyplot as plt
-import physion
-
+from common_fcts import *
 #%%
 folders = [#"PV-cells_WT_Adult_V1", 
     "SST-cells_WT_Adult_V1",
@@ -36,79 +25,58 @@ ax_dict["H"].axis("off")
 colors = [[pt.tab10(1),'lightgrey'], [pt.tab10(2),'lightgrey']]
 plot_tuning_responses_many_pop(folders, colors, ax_dict["A"]) 
 
+
 #plot resp to visual pies
 colors_list = [[pt.tab10(1), 'white'] , [pt.tab10(2),'white']]
 plot_responsiveness_pie(folders, colors_list, [ax_dict["B"], ax_dict["C"]])
 
-#
+
 colors = [pt.tab10(1), pt.tab10(2)]
-plot_mean_F_val(folders, 'correctedFluo0', colors, ax_dict["E"])
+#plot_mean_F_val(folders, 'correctedFluo0', colors, ax_dict["E"])
 
 colors = [[pt.tab10(1),'lightgrey'], [pt.tab10(2),'lightgrey']]
 for neuropil_inclusion_factor, ax in zip([2,3], [ax_dict["F"], ax_dict["G"]]) : 
-    special_dict = {'name' : 'withstd_corrfact_0.7inclufact_' + str(neuropil_inclusion_factor), 'title' : 'neuropil inclusion \n factor = '+ str(neuropil_inclusion_factor), 'ylims' : None}
+    special_dict = {'name' : 'withstd_corrfact_0.7inclufact_' + str(neuropil_inclusion_factor), 
+                    'title' : 'neuropil inclusion \n factor = '+ str(neuropil_inclusion_factor),
+                    'ylims' : None}
+    
     plot_tuning_responses_many_pop(folders, colors, ax, special_dict = special_dict, summary_path = '/home/user/DATA/Astrid/summary_neuropil_factor')
 
 #%%
-
-
 #---------TUNING RESPS----------#
-def plot_tuning_responses_many_pop(folders, colors, ax, special_dict = None, summary_path = '/home/user/DATA/Astrid/run_rest_summary') : 
+def plot_tuning_responses_many_pop(folders, 
+                                   colors, 
+                                   ax, 
+                                   special_dict = {}, 
+                                   summary_path = '/home/user/DATA/Astrid/run_rest_summary') : 
     
-    x = np.linspace(-30, 180-30, 100)
-    ms = 5 
+
     ylims = None
-    if special_dict is not None : 
+    if bool(special_dict): 
         ax.set_title(special_dict['title'], fontsize = 13)
         ylims = special_dict['ylims']
-        ms = 5
+
     for i,folder in enumerate(folders) : 
-        for j,key in enumerate(['%s_contrast-1.0' % folder, 
-            '%s_contrast-0.5' % folder]) :
 
-            func, uncertainty_sy, Responses, x_angles, n_cells = get_gaussian_fit_and_uncertainty(folder, key, special_dict, summary_path)
+        keys =  ['%s_contrast-1.0' % folder, 
+                '%s_contrast-0.5' % folder]
+        
+        for j, key in enumerate(keys) :
 
-            ax.plot(x, func(x), lw=4, alpha=.5, color=colors[i][j])
-            ax.scatter(x_angles, np.nanmean(Responses, axis=0),
-                        color=colors[i][j], s = 30)
-            ax.errorbar(x_angles, np.nanmean(Responses, axis=0),
-                        yerr=uncertainty_sy,
-                        elinewidth = 2,
-                        fmt = '.',
-                        color=colors[i][j], ms = ms)
-           # pt.scatter(x_angles, np.nanmean(Responses, axis=0), 
-            #            sy=uncertainty_sy, 
-             #           color=colors[i][j], ax=ax, ms=ms)
-            ax.annotate(text = 'N= ' + str(n_cells), xy = (120,1-(0.15*i)-(0.075*j)), color = colors[i][j], fontsize = 13)
-    ax.set_xticks(ticks = x_angles, labels = ['%i' % a if (a in [0, 90]) else '' for a in x_angles], fontsize = 13)
-    ax.set_ylabel('norm. $\\delta$ $\\Delta$F/F', fontsize = 13)
-    ax.set_xlabel('angle ($^o$) from pref.', fontsize = 13)
+            xy = (100,0.8-(0.06*j)-(0.12*i))
+            draw_tuning_curve(key, 
+                    special_dict = special_dict, 
+                    summary_path = summary_path,
+                    ax = ax, 
+                    color = colors[i][j],
+                    alpha = 1,
+                    xy = xy, 
+                    draw_uncertainty = True,
+                    graph_width_dict = {'lw' : 3, 'ms' : 5, 'fontsize' : 10}) 
+
+
+    add_axis_labels_to_plot(ax = ax)
     ax.set_ylim(ylims)
-
-
-def get_gaussian_fit_and_uncertainty(folder, key, special_dict = None, summary_path = '/home/user/DATA/Astrid/run_rest_summary') : 
-    
-    if special_dict is not None : 
-        Tunings = np.load(summary_path + '/' + special_dict['name'] + 'Tunings_%s.npy' % key, allow_pickle=True) 
-    else : 
-        Tunings = np.load(summary_path + '/Tunings_%s.npy' % key, allow_pickle=True)  
-
-    if 'std-values' in Tunings[0].keys() :
-        uncertainty_sy = session_sem_with_indepedance_hypothesis_universal(Tunings)
-    else :
-        print('no std values, uncertainty is set to None')
-        uncertainty_sy = None
-
-    Responses = get_tuning_responses(Tunings, average_by='sessions')
-
-    # Gaussian Fit
-    C, func = fit_gaussian(Tunings[0]['shifted_angle'],
-                            np.nanmean(Responses, axis=0))
-    
-    x_angles = Tunings[0]['shifted_angle']
-    n_cells = np.sum([np.sum(t['significant_ROIs']) for t in Tunings])
-
-    return func, uncertainty_sy, Responses, x_angles, n_cells
 
 
 def get_defaults() : 

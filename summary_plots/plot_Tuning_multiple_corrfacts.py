@@ -1,4 +1,9 @@
 #%%
+from common_fcts import *
+import matplotlib as matplotlib
+import matplotlib.colors as mcolors
+
+#%%
 folders = ["PV-cells_WT_Adult_V1", 
     "SST-cells_WT_Adult_V1",
     #"SST-cells_cond-GluN1-KO_Adult_V1"
@@ -34,7 +39,7 @@ ax_dict["i"].axis("off")
 axes = [[ax_dict["A"], ax_dict['c'], ax_dict['d']],[ax_dict["B"], ax_dict['e'],ax_dict['f']]]
 
 for i in range(len(folders)) : 
-    plot_orientation_tuning_curve_multiple_corrfact_one_graph(folders[i],
+    plot_orientation_tuning_multiple_corrfact(folders[i],
                         colors=[colors[i], 'lightgrey'],
                         neuropil_correction_factors = neuropil_correction_factors,
                         ax = axes[i][0])
@@ -44,44 +49,33 @@ for i in range(len(folders)) :
 
 
 #%%
-def plot_orientation_tuning_curve_multiple_corrfact_one_graph(folder,
+
+def plot_orientation_tuning_multiple_corrfact(folder,
                       colors=None,
                       neuropil_correction_factors =  [0,0.15,0.3,0.55,0.7,0.85,1],
                       ax = None,
                       ylims = (-0.05,1.05),
                       summary_path = '/home/user/DATA/Astrid/summary_neuropil_factor'):
 
-    x = np.linspace(-30, 180-30, 100)
+
     keys = ['%s_contrast-1.0' % folder, 
                 '%s_contrast-0.5' % folder]
 
-    for i, (key, color) in enumerate(zip(keys, colors)):
+    for iter_x, (key, color) in enumerate(zip(keys, colors)):
 
-        for k,neuropil_correction_factor in enumerate(neuropil_correction_factors) :
-            # load data
-            Tunings = np.load(summary_path + '/corrfact_' + str(neuropil_correction_factor) + 'Tunings_%s.npy' % key, 
-                        allow_pickle=True)
+        for iter_y,neuropil_correction_factor in enumerate(neuropil_correction_factors) :
 
-            Responses = get_tuning_responses(Tunings,
-                                           average_by='sessions')
+            special_dict = {'name' : 'corrfact_' + str(neuropil_correction_factor)}
+            xy = (110+(25*iter_x),0.2-(0.03*iter_y))
+            draw_tuning_curve(key, 
+                    special_dict = special_dict, 
+                    summary_path = summary_path,
+                    ax = ax, 
+                    color = color,
+                    alpha = 0.3+ iter_y/10,
+                    xy = xy)
 
-            # Gaussian Fit
-            C, func = fit_gaussian(Tunings[0]['shifted_angle'],
-                                np.mean([r/r[1] for r in Responses], axis=0))
-
-
-            ax.scatter(Tunings[0]['shifted_angle'], np.mean([r/r[1] for r in Responses], axis=0), 
-                        color=color, alpha = 0.3+k/10)
-
-            ax.plot(x, func(x), lw=2, color=color, alpha =0.3+ k/10)
-
-            n_cells = np.sum([np.sum(t['significant_ROIs']) for t in Tunings])
-
-            ax.annotate(text = 'N= ' + str(n_cells), xy = (110+(25*i),0.2-(0.03*k)), color = colors[i], alpha = 0.3+k/10, fontsize = 7)
-
-    ax.set_xticks(ticks = Tunings[0]['shifted_angle'], labels = ['%i' % a if (a in [0, 90]) else '' for a in Tunings[0]['shifted_angle']], fontsize = 13)
-    ax.set_ylabel('norm. $\\delta$ $\\Delta$F/F', fontsize = 13)
-    ax.set_xlabel('angle ($^o$) from pref.', fontsize = 13)
+    add_axis_labels_to_plot(ax = ax)
     ax.set_ylim(ylims)
 
 
@@ -90,7 +84,7 @@ def plot_corrfact_legend_color_maps(colors, fig, axes, neuropil_correction_facto
     for ax,color in zip(axes,colors) :
 
         if type(color) == str : 
-            color = (*matplotlib.colors.to_rgb(color),1.0)
+            color = (*mcolors.to_rgb(color),1.0)
 
         list_color_with_alphas = []
         color_as_list = list(color)
@@ -99,8 +93,8 @@ def plot_corrfact_legend_color_maps(colors, fig, axes, neuropil_correction_facto
             color_as_list[-1] = 0.3+ k/10
             list_color_with_alphas.append(tuple(color_as_list))
 
-        cmap = matplotlib.colors.LinearSegmentedColormap.from_list("", list_color_with_alphas)
-        norm = matplotlib.colors.Normalize(vmin=0, vmax=1)
+        cmap = mcolors.LinearSegmentedColormap.from_list("", list_color_with_alphas)
+        norm = mcolors.Normalize(vmin=0, vmax=1)
         mappable = matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap)
         fig.colorbar(mappable = mappable,  cax=ax, orientation="horizontal", ticks = neuropil_correction_factors, shrink = 0.5 )
 
