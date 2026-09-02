@@ -247,12 +247,7 @@ def compute_tuning_response_per_cells_with_arousal_cond(data, Episodes,
         Tuning['shifted_angle'] = Tuning_wo_cond['shifted_angle']
         Tuning['significant_ROIs'] = Tuning_wo_cond['significant_ROIs']
 
-
-        if arousal_cond == 'Run_' : 
-            filtering_arousal_cond = compute_arousal_mask(Episodes)[0]
-        elif arousal_cond == 'Rest_' : 
-            filtering_arousal_cond = compute_arousal_mask(Episodes)[1]
-
+        filtering_arousal_cond = get_arousal_filtering_cond(arousal_cond, Episodes)
 
         cond = Episodes.find_episode_cond(key='contrast', 
                                             value=contrast) &\

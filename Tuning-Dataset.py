@@ -96,7 +96,7 @@ def process_file(filename, i, c, filtering_cond_name):
                     Tuning)
             print('      [v] --> included, n=%i ROIs ' % data.nROIs)
 
-        except ValueError as e:
+        except ValueError as e: #value error from no locomotion value or no prefered angles for filtered summaries
             print(f"Error: {e}")
             print('File: %s' % filename, ' discarded')
         
@@ -131,7 +131,7 @@ if __name__=='__main__':
         c = list(datasets.keys())[n]
 
         if filtering_cond_name:
-            prefered_angles_dataset = get_prefered_angles_dataset(c.split('_contrast-')[0], summary_folder, c.split('_contrast-')[1])
+            prefered_angles_dataset = get_prefered_angles_dataset(datasets[c]['datafolder'], summary_folder, c.split('_contrast-')[1])
 
         table = datasets[c]['datafolder'].replace('NWBs', 'DataTable.xlsx')
 

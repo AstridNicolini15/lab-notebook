@@ -13,7 +13,7 @@ folders = [
     # "SST-cells_cond-GluN1-KO_Adult_V1_Taddy",
     # "SST-cells_WT_Adult_V1_Taddy"
 ]
-base_path = os.path.expanduser('~/CURATED/Cibele/')
+base_path =  "/home/user/DATA/Astrid/Cibele_data/"
 
 #summary_folder = os.path.join(os.path.expanduser('~'), 
                              # 'CURATED', 'Cibele', 'summary')
