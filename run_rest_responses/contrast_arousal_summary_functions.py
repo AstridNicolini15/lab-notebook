@@ -129,7 +129,7 @@ def correct_missing_responses_and_stds_with_nans(Sensitivity, Episodes):
 
     return corrected_sensitivity
 
-def get_summary_prefix_name(quantity, arousal_cond):
+def get_summary_prefix_name(quantity, filtering_cond_name):
 
     if quantity[:11] == 'Deconvolved' : 
         summary_prefix_name = quantity
@@ -138,38 +138,57 @@ def get_summary_prefix_name(quantity, arousal_cond):
     else : 
         raise ValueError("quantity should be either 'Deconvolved' or 'dFoF'")
 
-    if arousal_cond == 'Run' : 
+    if filtering_cond_name == 'Run' : 
         summary_prefix_name += "Run_"
-    elif arousal_cond == 'Rest' : 
+    elif filtering_cond_name == 'Rest' : 
         summary_prefix_name += "Rest_"
-    elif arousal_cond == '' :
+    elif filtering_cond_name == '' :
         summary_prefix_name += ""
     else : 
-        raise ValueError("arousal_cond should be either 'Run', 'Rest' or ''")
+        raise ValueError("filtering_cond_name should be either 'Run', 'Rest' or ''")
 
     return summary_prefix_name
 
+def build_filtering_cond_quantities(filtering_cond_name, data, quantities):
 
-def get_filtering_cond(arousal_cond, Episodes):
+    if filtering_cond_name == 'Run' or filtering_cond_name == 'Rest' :
+        quantities += ['running']
+        data.build_running(verbose=False)
+        check_presence_locomotion_values(data)
 
-    if arousal_cond == 'Run' : 
+    return data, quantities
+
+
+def get_filtering_cond(filtering_cond_name, Episodes):
+
+    if filtering_cond_name == 'Run' : 
         filtering_cond =  compute_arousal_mask(Episodes)[0]
 
-    elif arousal_cond == 'Rest' : 
+    elif filtering_cond_name == 'Rest' : 
         filtering_cond =  compute_arousal_mask(Episodes)[1]
-
-    elif arousal_cond == '' :
-        filtering_cond = None
 
     return filtering_cond
 
-def get_arousal_keys(create_arousal_summaries):
-    if create_arousal_summaries : 
-        arousal_keys = ['Run', 'Rest']
-    else : 
-        arousal_keys = ['']
 
-    return arousal_keys
+def get_prefered_angles(prefered_angles_dataset, filename):
+
+    prefered_angles = prefered_angles_dataset['prefered_angles'][(prefered_angles_dataset['filenames'] == filename)].values[0]
+
+    return prefered_angles
+
+
+def get_prefered_angles_dataset(folder, summary_folder, contrast) :
+
+    prefered_angles_dataset = pd.DataFrame({})
+
+    Tunings = np.load(summary_folder + 'Tunings_%s_contrast-%s.npy' % (folder, contrast), allow_pickle=True)
+
+    prefered_angles_dataset['filenames'] = [Tuning['datafile'] for Tuning in Tunings]
+    prefered_angles_dataset['contrasts'] = [contrast]*len(prefered_angles_dataset['filenames'])
+    prefered_angles_dataset['prefered_angles'] = [Tuning['prefered_angles'] for Tuning in Tunings]
+
+    return prefered_angles_dataset
+
 
 def check_presence_locomotion_values(data):
     if np.sum(data.running) == 0 : 

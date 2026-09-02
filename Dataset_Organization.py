@@ -8,8 +8,8 @@ folders = [
     #"PYR-PV-SynGCaMP_WT_Young_V1",
     #"SST-cells_cond-GluN1-KO_Young_V1",
     #"SST-cells_cond-GluN1-KO_Adult_V1",
-    #"SST-cells_WT_Adult_V1",
-    "SST-cells_WT_Young_V1",
+    "SST-cells_WT_Adult_V1",
+    #"SST-cells_WT_Young_V1",
     # "SST-cells_cond-GluN1-KO_Adult_V1_Taddy",
     # "SST-cells_WT_Adult_V1_Taddy"
 ]
@@ -18,9 +18,9 @@ base_path = os.path.expanduser('~/CURATED/Cibele/')
 #summary_folder = os.path.join(os.path.expanduser('~'), 
                              # 'CURATED', 'Cibele', 'summary')
 
-quantity = 'Deconvolved_correctedFluo' # 'dFoF' or 'Deconvolved'
-create_arousal_summaries = False 
-summary_folder = "/home/user/DATA/Astrid/deconvolved_summary_test"
+quantity = 'dFoF' #'Deconvolved_correctedFluo' # 'dFoF' or 'Deconvolved'
+filtering_cond_name = 'Run'
+summary_folder = "/home/user/DATA/Astrid/summary_test/"
 
 
 # age intervals in Yound
