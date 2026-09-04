@@ -129,23 +129,21 @@ def correct_missing_responses_and_stds_with_nans(Sensitivity, Episodes):
 
     return corrected_sensitivity
 
-def get_summary_prefix_name(quantity, filtering_cond_name):
+def get_summary_prefix_name(quantity, filtering_cond_name, special_dFoF_params) :
 
-    if quantity[:11] == 'Deconvolved' : 
-        summary_prefix_name = quantity
-    elif quantity == 'dFoF' : 
-        summary_prefix_name = ""
+    if quantity == 'dFoF' : 
+        summary_prefix_name = ''
+    elif quantity[:11] == 'Deconvolved' : 
+        summary_prefix_name = quantity + '_'
     else : 
-        raise ValueError("quantity should be either 'Deconvolved' or 'dFoF'")
+        raise ValueError("quantity should be either 'Deconvolved_something' or 'dFoF'")
 
-    if filtering_cond_name == 'Run' : 
-        summary_prefix_name += "Run_"
-    elif filtering_cond_name == 'Rest' : 
-        summary_prefix_name += "Rest_"
-    elif filtering_cond_name == '' :
-        summary_prefix_name += ""
-    else : 
-        raise ValueError("filtering_cond_name should be either 'Run', 'Rest' or ''")
+    if filtering_cond_name is not None : 
+        summary_prefix_name += filtering_cond_name
+
+    if special_dFoF_params is not None : 
+
+        summary_prefix_name += 'inclusion_factor-%s_correction_factor-%s_' % (special_dFoF_params['neuropil_inclusion_factor'], special_dFoF_params['neuropil_correction_factor'])
 
     return summary_prefix_name
 
