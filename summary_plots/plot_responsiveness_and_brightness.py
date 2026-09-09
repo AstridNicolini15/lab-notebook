@@ -54,58 +54,14 @@ plot_responsiveness_pie(folders, colors, [ax_dict["B"], ax_dict["C"],ax_dict["D"
 colors_without_grey = []
 for color in colors : 
     colors_without_grey.append(color[0])
-plot_mean_F_val(folders, 'correctedFluo0', colors_without_grey, ax_dict["I"], summary_path = summary_path)
+#plot_mean_F_val(folders, 'correctedFluo0', colors_without_grey, ax_dict["I"], summary_path = summary_path)
 
 for neuropil_inclusion_factor, ax in zip([2,3], [ax_dict["F"], ax_dict["G"]]) : 
     special_dict = {'name' : 'inclusion_factor-' + str(neuropil_inclusion_factor) + '_correction_factor-0.7_' , 
                     'title' : 'neuropil inclusion \n factor = '+ str(neuropil_inclusion_factor),
-                    'ylims' : None}
+                    'ylims' : (0,1.1)}
     
     plot_tuning_responses_many_pop(folders, colors, ax, special_dict = special_dict, summary_path = summary_path)
-
-#%%
-#---------TUNING RESPS----------#
-
-def correct_summary_form(summary_path, folders) :
-    if type(summary_path) == str :
-        summary_path = [summary_path] * len(folders)
-        print('Careful, summary path must be passed has a list in this fct')
-    return summary_path
-
-def plot_tuning_responses_many_pop(folders, 
-                                   colors, 
-                                   ax, 
-                                   special_dict = {}, 
-                                   summary_path =  ['/home/user/DATA/Astrid/summary']) : 
-    
-    summary_path = correct_summary_form(summary_path, folders)
-
-    ylims = None
-    if bool(special_dict): 
-        ax.set_title(special_dict['title'], fontsize = 13)
-        ylims = special_dict['ylims']
-
-    for i,folder in enumerate(folders) : 
-
-        keys =  ['%s_contrast-1.0' % folder,
-                '%s_contrast-0.5' % folder]
-        
-        for j, key in enumerate(keys) :
-
-            xy = (100,0.8-(0.06*j)-(0.12*i))
-            draw_tuning_curve(key, 
-                    special_dict = special_dict, 
-                    summary_path = summary_path[i],
-                    ax = ax, 
-                    color = colors[i][j],
-                    alpha = 1,
-                    xy = xy, 
-                    draw_uncertainty = True,
-                    graph_width_dict = {'lw' : 3, 'ms' : 5, 'fontsize' : 10}) 
-
-
-    add_axis_labels_to_plot(ax = ax)
-    ax.set_ylim(ylims)
 
 #%%
 #---------RESPONSIVENESS TO VISUAL STIM----------#
