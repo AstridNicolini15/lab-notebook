@@ -13,32 +13,36 @@ from physion.analysis.read_NWB\
 from physion.analysis.episodes.build import EpisodeData
 from physion.analysis.protocols.orientation_tuning\
                 import compute_tuning_response_per_cells
-from run_rest_responses.contrast_arousal_summary_functions import (get_prefered_angles_dataset,
-                                                                   get_prefered_angles, 
-                                                                   get_summary_prefix_name, 
-                                                                   get_filtering_cond, 
-                                                                   build_filtering_cond_quantities)
+from arousal_summaries.arousal_common_fcts import (get_summary_prefix_name, 
+                                                    get_filtering_cond, 
+                                                    build_filtering_cond_quantities)
+
+from arousal_summaries.tuning_summary_functions import (get_prefered_angles_dataset,
+                                                        get_prefered_angles)
 
 parallelized, debug = False, False 
 
 # load the dataset locations:
 from Dataset_Organization import datasets_func, quantity, summary_folder, filtering_cond_name
-datasets = datasets_func('contrast', [0.5, 1.0])
+datasets = datasets_func('contrast', [0.5,1.0])
 
 from Preprocessing_Settings import get_dFoF_params
 
-# %%
-def process_file(filename, i, c, filtering_cond_name):
+special_dFoF_params = sys.argv 
+if special_dFoF_params == ['Tuning-Dataset.py']:
+    special_dFoF_params = None
 
+# %%
+def process_file(filename, i, c, quantity, filtering_cond_name):
     # to be a valid datafile:
     nMIN_ROIs = 4
 
     # CELL-dependent calcium pre-processing params 
-    dFoF_parameters = get_dFoF_params(c)
+    dFoF_parameters = get_dFoF_params(c, special_dFoF_params)
 
     # statistical test for visually-evoked-responses
     stat_test_props=dict(interval_pre=[-1.,0],
-                         interval_post=[1.,2.],                                   
+                         interval_post= [1.,2.],                                   
                          test='ttest',                                            
                          sign='positive')
 
@@ -51,7 +55,12 @@ def process_file(filename, i, c, filtering_cond_name):
 
     if quantity[:11] == 'Deconvolved':
         #setattr(data, quantity, data.correctedFluo - data.correctedFluo0)
-        data.build_Deconvolved(quantity = quantity[12:])
+        data.build_Deconvolved(Tau = 1.5, quantity = quantity[12:])
+
+        stat_test_props=dict(interval_pre=[-1.,0.0],
+                    interval_post=[0.0, 1.0],                                   
+                    test='ttest',                                            
+                    sign='positive')
 
     quantities = [quantity]
 
@@ -84,6 +93,7 @@ def process_file(filename, i, c, filtering_cond_name):
                                                         filtering_cond=filtering_cond,
                                                         contrast =\
                                                             float(c.split('contrast-')[1][:3]),
+                                                        nMin_episodes = 2,
                                                         verbose=debug)
             Tuning['datafile'] = filename
             Tuning['nROIs_original'] = data.original_nROIs
@@ -96,8 +106,8 @@ def process_file(filename, i, c, filtering_cond_name):
                     Tuning)
             print('      [v] --> included, n=%i ROIs ' % data.nROIs)
 
-        except ValueError as e: #value error from no locomotion value or no prefered angles for filtered summaries
-            print(f"Error: {e}")
+        except ValueError as ve: #value error from no locomotion value or no prefered angles for filtered summaries
+            print(f"Error: {ve}")
             print('File: %s' % filename, ' discarded')
         
         except BaseException as be:
@@ -135,8 +145,8 @@ if __name__=='__main__':
 
         table = datasets[c]['datafolder'].replace('NWBs', 'DataTable.xlsx')
 
-        dataset_table, subjects_table, analysis =\
-                read_spreadsheet(table, get_metadata_from='table')
+        #dataset_table, subjects_table, analysis =\
+                #read_spreadsheet(table, get_metadata_from='table')
         print()
         print()
         print('=================================================================')
@@ -177,7 +187,7 @@ if __name__=='__main__':
                     for i in range(i0,imax):
                         proc = multiprocessing.Process(\
                                             target=process_file, 
-                                            args=(DATASET['files'][cond][i], i, c, filtering_cond_name))
+                                            args=(DATASET['files'][cond][i], i, c, quantity, filtering_cond_name))
                         procs.append(proc)
                         proc.start()
 
@@ -188,7 +198,7 @@ if __name__=='__main__':
                 #####################################
                 ###### UN-PARALLELIZED VERSION ######
                 for i, f in enumerate(DATASET['files'][cond]):
-                    process_file(f, i, c, filtering_cond_name)
+                    process_file(f, i, c, quantity, filtering_cond_name)
                 #####################################
 
             # now that we have stored all datafile outputs
@@ -203,7 +213,7 @@ if __name__=='__main__':
                     Tunings.append(Tuning)
 
             # # saving data
-            summary_prefix_name = get_summary_prefix_name(quantity, filtering_cond_name)
+            summary_prefix_name = get_summary_prefix_name(quantity, filtering_cond_name, special_dFoF_params)
 
             np.save(os.path.join(summary_folder, summary_prefix_name + 'Tunings_%s.npy' % c), Tunings)
 
