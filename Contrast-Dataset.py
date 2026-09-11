@@ -27,7 +27,7 @@ parallelized, debug = False, False
 from Dataset_Organization import datasets_func, quantity, summary_folder, filtering_cond_name
 datasets = datasets_func('angle', [0., 90.])
 
-from Preprocessing_Settings import get_dFoF_params
+from Preprocessing_Settings import get_dFoF_params, get_stat_test_props
 
 special_dFoF_params = sys.argv 
 if special_dFoF_params == ['Contrast-Dataset.py']:
@@ -46,10 +46,7 @@ def process_file(filename, i, c, quantity, filtering_cond_name):
     dFoF_parameters = get_dFoF_params(c, special_dFoF_params)
 
     # statistical test for visually-evoked-responses
-    stat_test_props=dict(interval_pre=[-1.,0],
-                            interval_post=[1.,2.],                                   
-                            test='ttest',                                            
-                            sign='positive')
+    stat_test_props= get_stat_test_props(c)
 
 
     response_significance_threshold=5e-2
