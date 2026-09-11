@@ -26,7 +26,7 @@ parallelized, debug = False, False
 from Dataset_Organization import datasets_func, quantity, summary_folder, filtering_cond_name
 datasets = datasets_func('contrast', [0.5,1.0])
 
-from Preprocessing_Settings import get_dFoF_params
+from Preprocessing_Settings import get_dFoF_params, get_stat_test_props
 
 special_dFoF_params = sys.argv 
 if special_dFoF_params == ['Tuning-Dataset.py']:
@@ -40,11 +40,8 @@ def process_file(filename, i, c, quantity, filtering_cond_name):
     # CELL-dependent calcium pre-processing params 
     dFoF_parameters = get_dFoF_params(c, special_dFoF_params)
 
-    # statistical test for visually-evoked-responses
-    stat_test_props=dict(interval_pre=[-1.,0],
-                         interval_post= [1.,2.],                                   
-                         test='ttest',                                            
-                         sign='positive')
+    # CELL-dependent statistical test for visually-evoked-responses
+    stat_test_props= get_stat_test_props(c)
 
     response_significance_threshold=5e-2
 
@@ -56,11 +53,7 @@ def process_file(filename, i, c, quantity, filtering_cond_name):
     if quantity[:11] == 'Deconvolved':
         #setattr(data, quantity, data.correctedFluo - data.correctedFluo0)
         data.build_Deconvolved(Tau = 1.5, quantity = quantity[12:])
-
-        stat_test_props=dict(interval_pre=[-1.,0.0],
-                    interval_post=[0.0, 1.0],                                   
-                    test='ttest',                                            
-                    sign='positive')
+        stat_test_props['interval_post']=[0.0, 1.0]                                  
 
     quantities = [quantity]
 
