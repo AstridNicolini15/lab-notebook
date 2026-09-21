@@ -13,18 +13,21 @@ from physion.analysis.read_NWB\
 from physion.analysis.episodes.build import EpisodeData
 from physion.analysis.protocols.orientation_tuning\
                 import compute_tuning_response_per_cells
-from arousal_summaries.arousal_common_fcts import (get_summary_prefix_name, 
+from tuning_summary_tools import (get_summary_prefix_name, 
                                                     get_filtering_cond, 
                                                     build_filtering_cond_quantities)
 
-from arousal_summaries.tuning_summary_functions import (get_prefered_angles_dataset,
-                                                        get_prefered_angles)
 
 parallelized, debug = False, False 
 
 # load the dataset locations:
 from Dataset_Organization import datasets_func, quantity, summary_folder, filtering_cond_name
-datasets = datasets_func('contrast', [0.5,1.0])
+datasets = datasets_func('contrast', [0.5, 1.0])
+
+if filtering_cond_name is not None : 
+    from arousal_summaries.tuning_summary_functions import (get_prefered_angles_dataset,
+                                                            get_prefered_angles)
+
 
 from Preprocessing_Settings import get_dFoF_params, get_stat_test_props
 

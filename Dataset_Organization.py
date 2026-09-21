@@ -3,12 +3,12 @@ import sys
 
 folders = [
     #"SST-cells_cond-GluN1-KO_Adult_V1",
-    "PV-cells_WT_Adult_V1", 
+    #"PV-cells_WT_Adult_V1", 
     #"PV-cells_WT_Young_V1", 
-    "PV-cells_cond-GluN1-KO_Adult_V1", 
-    #"PYR-PV-SynGCaMP_WT_Young_V1",
+    #"PV-cells_cond-GluN1-KO_Adult_V1", 
+    #"PYR-SynGCaMP_WT_V1",
     #"SST-cells_cond-GluN1-KO_Young_V1",
-    #"SST-cells_cond-GluN1-KO_Adult_V1",
+    "SST-cells_cond-GluN1-KO_Adult_V1",
     #"SST-cells_WT_Adult_V1",
     #"SST-cells_WT_Young_V1",
     # "SST-cells_cond-GluN1-KO_Adult_V1_Taddy",
