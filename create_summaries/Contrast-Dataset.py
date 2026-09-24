@@ -6,8 +6,7 @@ import os, sys , shutil
 import multiprocessing
 import numpy as np
 
-sys.path += [os.path.join(os.path.expanduser('~'),\
-                    'lab-notebook', 'astrid', 'physion', 'src')]
+sys.path += "/home/user/lab-notebook/astrid/physion/src"
 
 from physion.analysis.read_NWB\
                          import scan_folder_for_NWBfiles, Data

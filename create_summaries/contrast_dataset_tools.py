@@ -14,6 +14,8 @@ from physion.analysis.episodes.build import EpisodeData
 from physion.analysis.protocols.contrast_sensitivity\
                         import compute_sensitivity_per_cells
 
+from physion.analysis. protocols.contrast_sensitivity import get_responses, get_gains
+
 
 #%%
 #------------Build functions----------------#
@@ -142,48 +144,6 @@ def plot_contrast_sensitivity_with_uncertainty(keys,
 #%%
 #------------Additional Plot functions----------------#
 
-#from physion.utils import plot_tools as pt
-#from scipy import stats
-#import math 
-#import pandas as pd 
-
-def get_responses(Sensitivities,
-                  average_by='sessions'):
-
-    if average_by=='sessions':
-        # mean significant responses per session
-        Responses = [np.mean(S['Responses'], axis=0) for S in Sensitivities]
-
-    elif average_by=='subjects':
-        subjects = np.array([Sensitivitie['subject']\
-                                for Sensitivitie in Sensitivities])
-        Responses = []
-        # mean significant responses per session
-        for subj in np.unique(subjects):
-            sCond = (subjects==subj)
-            Responses.append(\
-                np.mean(\
-                    np.concatenate([\
-                        Sensitivities[i]['Responses']\
-                          for i in np.arange(len(subjects))[sCond]]),
-                    axis=0))
-
-    elif average_by=='ROIs':
-        # mean significant responses per session
-        Responses = np.concatenate([\
-                        S['Responses'] for S in Sensitivities])
-
-    else:
-        print()
-        print(' choose average_by either "sessions" or "ROIs"  ')
-        print()
-
-    return Responses
-
-def get_gains(Responses, contrast):
-        """ gain from linear fit"""
-        return np.array([np.polyfit(contrast, r, 1)[0]\
-                        for r in Responses])
 
 #%%%%%%%%%%%%%%%old fcts, to integrate or deleted at some point%%%%%%%%%%%%%%%
 def compute_perc_ep_run(folder, summary_path, return_mean = True) :

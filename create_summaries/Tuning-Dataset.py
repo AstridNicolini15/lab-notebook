@@ -6,16 +6,17 @@ import os, sys , shutil
 import multiprocessing
 import numpy as np
 
-sys.path += [os.path.join(os.path.expanduser('~'),\
-                          'lab-notebook', 'astrid', 'physion', 'src')]
+
+sys.path += ["/home/user/lab-notebook/astrid/physion/src"]
+
 from physion.analysis.read_NWB\
                 import scan_folder_for_NWBfiles, Data
 from physion.analysis.episodes.build import EpisodeData
 from physion.analysis.protocols.orientation_tuning\
                 import compute_tuning_response_per_cells
-from tuning_summary_tools import (get_summary_prefix_name, 
-                                                    get_filtering_cond, 
-                                                    build_filtering_cond_quantities)
+from tuning_dataset_tools import (get_summary_prefix_name, 
+                                    get_filtering_cond, 
+                                    build_filtering_cond_quantities)
 
 
 parallelized, debug = False, False 
@@ -25,13 +26,14 @@ from Dataset_Organization import datasets_func, quantity, summary_folder, filter
 datasets = datasets_func('contrast', [0.5, 1.0])
 
 if filtering_cond_name is not None : 
-    from arousal_summaries.tuning_summary_functions import (get_prefered_angles_dataset,
-                                                            get_prefered_angles)
+    from tuning_dataset_tools import (get_prefered_angles_dataset,
+                                        get_prefered_angles)
 
 
 from Preprocessing_Settings import get_dFoF_params, get_stat_test_props
 
 special_dFoF_params = sys.argv 
+print(special_dFoF_params)
 if special_dFoF_params == ['Tuning-Dataset.py']:
     special_dFoF_params = None
 
@@ -40,10 +42,10 @@ def process_file(filename, i, c, quantity, filtering_cond_name):
     # to be a valid datafile:
     nMIN_ROIs = 4
 
-    # CELL-dependent calcium pre-processing params 
+    # CELL type-dependent calcium pre-processing params 
     dFoF_parameters = get_dFoF_params(c, special_dFoF_params)
 
-    # CELL-dependent statistical test for visually-evoked-responses
+    # CELL type-dependent statistical test for visually-evoked-responses
     stat_test_props= get_stat_test_props(c)
 
     response_significance_threshold=5e-2
@@ -63,7 +65,7 @@ def process_file(filename, i, c, quantity, filtering_cond_name):
     if data.nROIs>=nMIN_ROIs:
 
         try:
-
+            
             if filtering_cond_name :
                 data, quantities = build_filtering_cond_quantities(filtering_cond_name, data, quantities)
         
@@ -80,6 +82,11 @@ def process_file(filename, i, c, quantity, filtering_cond_name):
                 filtering_cond = None
                 prefered_angles = None
 
+            if stat_test_props['sign'] == 'both' : 
+                plot_orientations_significances = True 
+            else : 
+                plot_orientations_significances = False 
+
             Tuning = compute_tuning_response_per_cells(data, Episodes, 
                                                         quantity=quantity, 
                                                         stat_test_props = stat_test_props, 
@@ -90,6 +97,7 @@ def process_file(filename, i, c, quantity, filtering_cond_name):
                                                         contrast =\
                                                             float(c.split('contrast-')[1][:3]),
                                                         nMin_episodes = 2,
+                                                        plot_orientations_significances = plot_orientations_significances, 
                                                         verbose=debug)
             Tuning['datafile'] = filename
             Tuning['nROIs_original'] = data.original_nROIs
@@ -169,7 +177,7 @@ if __name__=='__main__':
 
             if parallelized:
                 ################################################
-                ###    parallelization here !   #################
+                ###    parallelization here !  #################
                 ################################################
                 nruns = int(len(DATASET['files'][cond])/cpus)+1
 

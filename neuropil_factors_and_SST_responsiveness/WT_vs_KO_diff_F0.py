@@ -120,7 +120,7 @@ def plot_orientation_tuning_curve_diff_significatif_many_pop(folders,
 
 #%%
 
-values_of_interest = ['Fluorescence','Neuropil']
+values_of_interest = ['rawFluo', 'correctedFluo', 'correctedFluo0']
 
 def plot_bar_mean_many_pop(values_of_interest, folders, summary_protocol, protocol_control_cond) : 
 

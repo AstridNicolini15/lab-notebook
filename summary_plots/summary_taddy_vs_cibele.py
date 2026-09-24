@@ -1,4 +1,11 @@
 #%%
+import sys
+sys.path += ["/home/user/lab-notebook/astrid"]
+
+from plot_general_tools import plot_tuning_responses_many_pop
+from responsiveness_and_brightness import plot_responsiveness_pie, plot_mean_F_val
+#%%
+
 folders_cibele = ["SST-cells_WT_Adult_V1",
     "SST-cells_cond-GluN1-KO_Adult_V1"]
 summary_path_cibele = ["/home/user/DATA/Astrid/Cibele_data/summary"] * len(folders_cibele)
@@ -46,7 +53,7 @@ for k, ax_letters, folders, summary_path, colors in zip([0,1],
     for i, folder in enumerate(folders) : 
         fig.text(x= 0+0.45*k, y= -0.02-0.04*i, s = '%s' % folder, color = colors[i][0], fontsize = 15)
     
-    plot_tuning_responses_many_pop(folders, colors, ax_dict[ax_letters[0]], special_dict =  {'title' : '', 'ylims' : (-0.05,1.2)}, summary_path = summary_path)
+    plot_tuning_responses_many_pop(folders, colors, ax_dict[ax_letters[0]], special_dict =  {'title' : '', 'ylims' : (0,1.05)}, summary_path = summary_path)
 
     axes = [ax_dict[ax_letters[1]], ax_dict[ax_letters[3]], ax_dict[ax_letters[2]], ax_dict[ax_letters[4]]]
     plot_responsiveness_pie(folders, colors, axes, summary_path = summary_path)

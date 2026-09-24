@@ -1,6 +1,8 @@
 #%%
 import os ,sys
 import numpy as np 
+from scipy.stats import sem
+
 os.chdir('/home/user/lab-notebook/astrid')
 sys.path += ['./physion/src']
 sys.path += ['./summary_plots']
@@ -8,12 +10,15 @@ import physion.utils.plot_tools as pt
 from physion.analysis.read_NWB\
                          import scan_folder_for_NWBfiles, Data
 from physion.analysis.episodes.build import EpisodeData
-from physion.analysis.protocols.orientation_tuning import *
+from physion.analysis.protocols.orientation_tuning import get_tuning_responses, fit_gaussian 
 from physion.analysis.protocols.contrast_sensitivity import *
-from arousal_summaries.arousal_common_fcts import *
-import matplotlib.pyplot as plt
 import physion
+from propagated_uncertainty import *
+
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 from matplotlib.colors import to_rgb
+
 
 
 #%%
@@ -55,7 +60,7 @@ def draw_tuning_curve(key,
 
     ax.plot(x, func(x), lw=lw, color=color, alpha = alpha)
 
-    ax.annotate(text = 'N= ' + str(n_cells), xy = xy, color = color, alpha = alpha, fontsize = fontsize)
+    ax.annotate(text = 'N= ' + str(n_cells), xy = xy, color = color, fontsize = fontsize, alpha = alpha)
 
     if draw_uncertainty : 
         if 'std-values' not in Tunings[0].keys(): 
@@ -126,26 +131,38 @@ def add_axis_labels_to_plot(ax, plot_type = 'Tuning', fontsize = 13):
         ax.set_xticks(ticks = np.arange(3)*0.5)
         ax.set_ylabel('$\\delta$ $\\Delta$F/F', fontsize = fontsize)
         ax.set_xlabel('contrast', fontsize = fontsize)
+
           
+def create_legend(folders, colors, with_grey = False) : 
 
+    handles = []
+    for i, folder in enumerate(folders) : 
 
-#---------TUNING RESPS----------#
+        patch = mpatches.Patch(color=colors[i][0], label=folder)
+        handles.append(patch)
+
+        if with_grey == True : 
+            patch = mpatches.Patch(color=colors[i][1], label=folder)
+            handles.append(patch)
+
+    return handles
+
 
 def correct_summary_form(summary_path, folders) :
     if type(summary_path) == str :
         summary_path = [summary_path] * len(folders)
-        print('Careful, summary path must be passed has a list in this fct')
+        print('summary_path is not a list, assuming same path for all folders')
     return summary_path
 
 def plot_tuning_responses_many_pop(folders, 
                                    colors, 
                                    ax, 
                                    special_dict = {}, 
-                                   summary_path =  ['/home/user/DATA/Astrid/summary']) : 
+                                   summary_path =  [ "/home/user/DATA/Astrid/Cibele_data/summary"]) : 
     
     summary_path = correct_summary_form(summary_path, folders)
 
-    ylims = [0,1.1]
+    ylims = [0,1.05]
     if bool(special_dict): 
         ax.set_title(special_dict['title'], fontsize = 13)
         ylims = special_dict['ylims']
@@ -157,7 +174,7 @@ def plot_tuning_responses_many_pop(folders,
         
         for j, key in enumerate(keys) :
 
-            xy = (100,0.8-(0.06*j)-(0.12*i))
+            xy = (115,1-(0.04*j)-(0.08*i))
             draw_tuning_curve(key, 
                     special_dict = special_dict, 
                     summary_path = summary_path[i],
@@ -193,7 +210,7 @@ def plot_contrast_responses_many_pop(folders,
 
         for j, key in enumerate(keys) :
 
-            xy = (100,0.8-(0.06*j)-(0.12*i))
+            xy = (0.8,0.1-(0.04*j)-(0.08*i))
             draw_sensitivitie_curve(key,
                             special_dict = special_dict, 
                             summary_path = summary_path[i],
@@ -202,7 +219,64 @@ def plot_contrast_responses_many_pop(folders,
                             alpha = 1,
                             xy = xy,
                             draw_uncertainty = True,
-                            graph_width_dict = {'lw' : 2, 'ms' : 3, 'fontsize' : 7})
+                            graph_width_dict = {'lw' : 2, 'ms' : 3, 'fontsize' : 10})
             
     add_axis_labels_to_plot(ax, plot_type = 'Sensitivities')
     ax.set_ylim(ylims)
+
+#%%
+#---------RESPONSIVENESS TO VISUAL STIM----------#
+     
+def get_responsiveness_to_visual_stim(folder, summary_protocol = 'Tunings', summary_path =  '/home/user/DATA/Astrid/summary') : 
+
+    perc_resp_to_visual = ()
+    if summary_protocol == 'Tunings' :
+        for key in ['%s_contrast-1.0' % folder, 
+            '%s_contrast-0.5' % folder] : 
+
+            Tunings = np.load(summary_path + '/' + summary_protocol + '_' + key + '.npy', allow_pickle=True) 
+
+            n_cell_resp = np.sum([np.sum(Tuning['significant_ROIs']) for Tuning in Tunings])
+            n_cell_nonresp = np.sum([np.sum(~Tuning['significant_ROIs']) for Tuning in Tunings])
+
+            perc_resp_to_visual = (*perc_resp_to_visual, (n_cell_resp *100) / (n_cell_resp + n_cell_nonresp))
+            perc_resp_to_visual = (*perc_resp_to_visual, (n_cell_nonresp *100) / (n_cell_resp + n_cell_nonresp))
+
+
+    if summary_protocol == 'Sensitivities' :
+        for key in ['%s_angle-90.0' % folder, 
+            '%s_angle-0.0' % folder] : 
+
+            Sensitivities = np.load(summary_path + summary_protocol + '_' + key + '.npy', allow_pickle=True) 
+            cell_responsiveness = np.concatenate([np.sum(S['significant_pos'] + S['significant_neg'], axis = 1) for S in Sensitivities])
+
+            n_cell_resp = len([x for x in cell_responsiveness if x !=0])
+            n_cell_nonresp = len([x for x in cell_responsiveness if x ==0])
+
+            perc_resp_to_visual = (*perc_resp_to_visual, (n_cell_resp *100) / (n_cell_resp + n_cell_nonresp))
+            perc_resp_to_visual = (*perc_resp_to_visual, (n_cell_nonresp *100) / (n_cell_resp + n_cell_nonresp))
+
+    return  perc_resp_to_visual
+
+
+def plot_responsiveness_pie(folders, colors_list, axes, summary_protocol = 'Tunings', summary_path = '/home/user/DATA/Astrid/summary') : 
+
+        
+    summary_path = correct_summary_form(summary_path, folders)
+
+    for i,folder in enumerate(folders) : 
+
+        perc_resp_c1, perc_nonresp_c1, perc_resp_c05, perc_nonresp_c05 = np.round(get_responsiveness_to_visual_stim(folder, summary_protocol = summary_protocol, summary_path = summary_path[i]),3)
+        
+        for j, perc_resp, perc_nonresp in zip([0, 1], [perc_resp_c05, perc_resp_c1], [perc_nonresp_c05, perc_nonresp_c1]):
+            axes[i*2+j].pie([perc_resp, perc_nonresp], 
+                            colors = colors_list[i%2], 
+                            startangle = 90,
+                            wedgeprops={"edgecolor":"black",'linewidth': 1, 'width' : 0.6},
+                            textprops = {"fontsize" : 10})
+            
+        axes[i*2].annotate(text = f'{perc_resp_c05:.1f}% \n resp', xy= (-1.2,1), color = colors_list[i%2][0], fontsize = 13)
+        axes[i*2+1].annotate(text = f'{perc_resp_c1:.1f}% \n resp', xy= (-1.2,1), color = colors_list[i%2][0], fontsize = 13)
+    axes[0].set_title('half contrast', color = 'black', loc = 'left', fontsize = 17, pad = 35)
+    axes[1].set_title('full contrast', color = 'black', loc = 'left', fontsize = 17, pad = 35)
+                

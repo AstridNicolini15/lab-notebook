@@ -1,5 +1,8 @@
-#%%
-from common_fcts import *
+#%%import os, sys , shutil 
+import sys
+sys.path += ["/home/user/lab-notebook/astrid"]
+
+from plot_general_tools import plot_tuning_responses_many_pop, plot_responsiveness_pie
 
 #%%Cibele  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 summary_path = "/home/user/DATA/Astrid/Cibele_data/summary"
@@ -62,64 +65,6 @@ for neuropil_inclusion_factor, ax in zip([2,3], [ax_dict["F"], ax_dict["G"]]) :
                     'ylims' : (0,1.1)}
     
     plot_tuning_responses_many_pop(folders, colors, ax, special_dict = special_dict, summary_path = summary_path)
-
-#%%
-#---------RESPONSIVENESS TO VISUAL STIM----------#
-     
-def get_responsiveness_to_visual_stim(folder, summary_protocol = 'Tunings', summary_path =  '/home/user/DATA/Astrid/summary') : 
-
-    perc_resp_to_visual = ()
-    if summary_protocol == 'Tunings' :
-        for key in ['%s_contrast-1.0' % folder, 
-            '%s_contrast-0.5' % folder] : 
-
-            Tunings = np.load(summary_path + '/' + summary_protocol + '_' + key + '.npy', allow_pickle=True) 
-
-            n_cell_resp = np.sum([np.sum(Tuning['significant_ROIs']) for Tuning in Tunings])
-            n_cell_nonresp = np.sum([np.sum(~Tuning['significant_ROIs']) for Tuning in Tunings])
-
-            perc_resp_to_visual = (*perc_resp_to_visual, (n_cell_resp *100) / (n_cell_resp + n_cell_nonresp))
-            perc_resp_to_visual = (*perc_resp_to_visual, (n_cell_nonresp *100) / (n_cell_resp + n_cell_nonresp))
-
-
-    if summary_protocol == 'Sensitivities' :
-        for key in ['%s_angle-90.0' % folder, 
-            '%s_angle-0.0' % folder] : 
-
-            Sensitivities = np.load(summary_path + summary_protocol + '_' + key + '.npy', allow_pickle=True) 
-            cell_responsiveness = np.concatenate([np.sum(S['significant_pos'] + S['significant_neg'], axis = 1) for S in Sensitivities])
-
-            n_cell_resp = len([x for x in cell_responsiveness if x !=0])
-            n_cell_nonresp = len([x for x in cell_responsiveness if x ==0])
-
-            perc_resp_to_visual = (*perc_resp_to_visual, (n_cell_resp *100) / (n_cell_resp + n_cell_nonresp))
-            perc_resp_to_visual = (*perc_resp_to_visual, (n_cell_nonresp *100) / (n_cell_resp + n_cell_nonresp))
-
-    return  perc_resp_to_visual
-
-
-def plot_responsiveness_pie(folders, colors_list, axes, summary_protocol = 'Tunings', summary_path = '/home/user/DATA/Astrid/summary') : 
-
-        
-    summary_path = correct_summary_form(summary_path, folders)
-
-    for i,folder in enumerate(folders) : 
-
-        perc_resp_c1, perc_nonresp_c1, perc_resp_c05, perc_nonresp_c05 = np.round(get_responsiveness_to_visual_stim(folder, summary_protocol = summary_protocol, summary_path = summary_path[i]),3)
-        
-        for j, perc_resp, perc_nonresp in zip([0, 1], [perc_resp_c05, perc_resp_c1], [perc_nonresp_c05, perc_nonresp_c1]):
-            axes[i*2+j].pie([perc_resp, perc_nonresp], 
-                            colors = colors_list[i%2], 
-                            startangle = 90,
-                            wedgeprops={"edgecolor":"black",'linewidth': 1, 'width' : 0.6},
-                            textprops = {"fontsize" : 10})
-            
-        axes[i*2].annotate(text = f'{perc_resp_c05:.1f}% \n resp', xy= (-1.2,1), color = colors_list[i%2][0], fontsize = 13)
-        axes[i*2+1].annotate(text = f'{perc_resp_c1:.1f}% \n resp', xy= (-1.2,1), color = colors_list[i%2][0], fontsize = 13)
-    axes[0].set_title('half contrast', color = 'black', loc = 'left', fontsize = 17, pad = 35)
-    axes[1].set_title('full contrast', color = 'black', loc = 'left', fontsize = 17, pad = 35)
-                
-    #ax.set_axis_off()
 
 #%%
 #---------MEAN RAW FLUO BAR----------#

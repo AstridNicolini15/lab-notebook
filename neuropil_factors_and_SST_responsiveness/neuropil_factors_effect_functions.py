@@ -4,6 +4,51 @@ from scipy import stats
 import matplotlib.pyplot as plt
 from physion.utils import plot_tools as pt
 from physion.analysis.protocols.orientation_tuning import *
+#%%
+
+import numpy as np 
+import matplotlib.pyplot as plt 
+
+summary_folder = '/home/user/DATA/Astrid/Cibele_data/summary'
+neuropil_inclusion_factors = [0,0.5,1,1.15,1.3,1.5,2,3,5]
+folders = [
+    "PV-cells_WT_Adult_V1", 
+    #"PYR-SynGCaMP_WT_V1",
+    #"SST-cells_WT_Adult_V1"
+    ]
+
+colors = [(to_rgb('#b30a7bff'),1),
+          #(to_rgb('#005d8aff'),1),
+          (to_rgb('#12522eff'),1)]
+
+nb_valid_rois_by_inclusion_factor(folders, colors, summary_folder, neuropil_inclusion_factors)
+
+def nb_valid_rois_by_inclusion_factor(folders, colors, summary_folder, neuropil_inclusion_factors) :
+    
+    plt.figure(figsize = (7,7))
+
+    for i,folder in enumerate(folders):
+
+        key = '%s_contrast-1.0' % folder
+        nb_rois_per_factor = []
+
+        for neuropil_inclusion_factor in neuropil_inclusion_factors :
+
+            prefixe_name = '/' + 'inclusion_factor-' + str(neuropil_inclusion_factor) + '_correction_factor-0.7_'
+            if neuropil_inclusion_factor == 1.15 : 
+                prefixe_name = '/'
+
+            Tunings = np.load(summary_folder + prefixe_name + 'Tunings_%s.npy' % key, allow_pickle=True)
+            nb_rois_per_factor.append(np.sum([Tuning['nROIs_final'] for Tuning in Tunings]))
+
+        plt.plot(neuropil_inclusion_factors, nb_rois_per_factor, label = '%s_contrast-1.0' % folders[i], color = colors[i], alpha = 0.7)
+        plt.scatter(neuropil_inclusion_factors, nb_rois_per_factor, color = colors[i])
+
+    plt.text(s='fixed correction factor at : 0.7', x = -1, y = -120)
+    plt.xlabel('ROI_TO_NEUROPIL_INCLUSION_FACTOR ')
+    plt.ylabel('Total nb of valid rois')
+    plt.legend()
+
 
 #%%
 def plot_tuning_responses_of_sign_and_non_sign_cells(folders, ylims, averaged_by_sessions = True) :
@@ -147,112 +192,3 @@ def nb_valid_and_sign_rois_by_correction_factor(folders, summary_folder, neuropi
     #plt.ylim((500,700))
     plt.legend(loc='center', bbox_to_anchor=(0.8, -0.3))
 
-
-
-def plot_orientation_tuning_variations_both_parameters(keys,
-                      path=os.path.expanduser('~'),
-                      average_by='sessions',
-                      colors=None,
-                      fig_args={'right':20, 'figsize' : (7,7)},
-                      neuropil_inclusion_factors = [],
-                      neuropil_correction_factors = []):
-    
-
-    fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(9, 3))
-    fig.tight_layout(w_pad = 5.5)
-    fig.text(x = -0.02, y= 1.12, s = keys[0][:-13])
-
-    if type(keys)==str:
-        keys, colors = [keys], [colors[0]]
-
-    x = np.linspace(-30, 180-30, 100)
-
-    for j,neuropil_inclusion_factor in enumerate(neuropil_inclusion_factors) :
-        a = 0
-        for i, (key, color) in enumerate(zip(keys, colors)):
-            mean_nroi = []
-            for k,neuropil_correction_factor in enumerate(neuropil_correction_factors) :
-                # load data
-                Tunings = \
-                    np.load(os.path.join(path, 'corrfact_' + str(neuropil_correction_factor) + 'inclufact_' + str(neuropil_inclusion_factor) + 'Tunings_%s.npy' % key), 
-                            allow_pickle=True)
-
-                Responses = get_tuning_responses(Tunings,
-                                            average_by=average_by)
-
-                # Gaussian Fit
-                C, func = fit_gaussian(Tunings[0]['shifted_angle'],
-                                    np.nanmean([r/r[1] for r in Responses], axis=0))
-
-                axes[j].plot(x, func(x), lw=2, color=color, alpha =0.3*(k+1))
-
-                axes[j].scatter(Tunings[0]['shifted_angle'], np.nanmean([r/r[1] for r in Responses], axis=0),  color=color, alpha = 0.3*(k+1))
-                
-                axes[j].text(x = -60, y= -0.6-(k/10)+a, s = 'neuropil correction factor :' + str(neuropil_correction_factor), color=color, alpha = 0.3*(k+1))
-                mean_nroi.append(np.sum([Tunings[i]['nROIs_responsive'] for i in range(len(Tunings))]))
-                axes[j].text(x = 120 + a*700, y= -0.6-(k/10)+a, s = str(mean_nroi[-1]), color='black', alpha = 0.3*(k+1))
-
-            axes[j].text(x = 120+ a*700, y= -0.95, s = str(np.round(np.mean(mean_nroi),1)), color='black')
-            a = 0.05
-
-        axes[j].set_xticks(ticks = Tunings[0]['shifted_angle'], labels = ['%i' % a if (a in [0, 90]) else '' for a in Tunings[0]['shifted_angle'] ])
-        axes[j].set_yticks(np.arange(3)*0.5)
-        axes[j].set_xlabel('angle ($^o$) from pref.')
-        axes[j].set_ylabel('norm. $\\delta$ $\\Delta$F/F')
-        axes[j].set_ylim([-0.05, 1.05])
-        axes[j].text(x = -60, y= -0.4, s = 'neuropil inclusion factor = ' + str(neuropil_inclusion_factor))
-        axes[j].text(x = 120, y= -0.4, s = '/ nROIs resp')
-    
-
-
-
-def plot_orientation_tuning_curve_multiple_corrfact_one_graph(keys,
-                      path=os.path.expanduser('~'),
-                      average_by='sessions',
-                      colors=None,
-                      neuropil_correction_factors = [],
-                      neuropil_inclusion_factor = 1.15):
-        
-    if colors is None:
-        colors = pt.plt.rcParams['axes.prop_cycle'].by_key()['color']
-
-    if type(keys)==str:
-        keys, colors = [keys], [colors[0]]
-
-    plt.figure(figsize = (6,6))
-    x = np.linspace(-30, 180-30, 100)
-
-    a=0 
-    for i, (key, color) in enumerate(zip(keys, colors)):
-        for k,neuropil_correction_factor in enumerate(neuropil_correction_factors) :
-            # load data
-            Tunings = \
-                np.load(os.path.join(path, 'corrfact_' + str(neuropil_correction_factor) + 'inclufact_' + str(neuropil_inclusion_factor) + 'Tunings_%s.npy' % key), 
-                        allow_pickle=True)
-
-            Responses = get_tuning_responses(Tunings,
-                                           average_by=average_by)
-
-            # Gaussian Fit
-            C, func = fit_gaussian(Tunings[0]['shifted_angle'],
-                                np.mean([r/r[1] for r in Responses], axis=0))
-
-            plt.scatter(Tunings[0]['shifted_angle'], np.mean([r/r[1] for r in Responses], axis=0), 
-                        color=color, alpha = 0.3+k/10)
-
-
-            plt.plot(x, func(x), lw=2, color=color, alpha =0.3+ k/10)
-
-            plt.text(x = -60, y= -0.5-(k/10)+a, s = 'neuropil correction factor :' + str(neuropil_correction_factor), color=color, alpha =0.3+ k/10)
-
-
-        a=0.05
-
-    plt.xticks(ticks = Tunings[0]['shifted_angle'], labels = ['%i' % a if (a in [0, 90]) else '' for a in Tunings[0]['shifted_angle'] ])
-    plt.yticks(np.arange(3)*0.5)
-    plt.xlabel('angle ($^o$) from pref.')
-    plt.ylabel('norm. $\\delta$ $\\Delta$F/F')
-    plt.ylim([-0.05, 1.05])
-    plt.title('NEUROPIL_CORRECTION_FACTOR variations')
-    plt.text(x = -60, y= -0.4, s = key[:-13])
-    plt.text(x = -60, y= -0.3, s = 'ROI_TO_NEUROPIL_INCLUSION_FACTOR = 1.15')

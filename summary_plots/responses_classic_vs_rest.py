@@ -1,4 +1,7 @@
-from common_fcts import *
+import sys
+sys.path += ["/home/user/lab-notebook/astrid"]
+
+from plot_general_tools import *
 
 #%%
 summary_path =  "/home/user/DATA/Astrid/Cibele_data/summary"

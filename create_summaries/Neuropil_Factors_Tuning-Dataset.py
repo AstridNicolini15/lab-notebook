@@ -2,8 +2,8 @@
 import os, sys
                           
 
-neuropil_inclusion_factors = [0,0.5,1,1.3,1.5,5] #[1.15]
-neuropil_correction_factors = [0.7] #[0,0.15,0.3,0.55,0.7,0.85,1]
+neuropil_inclusion_factors = [1.15,2,3] #[0,0.5,1,1.3,1.5,5] 
+neuropil_correction_factors =  [0.7] #[0,0.15,0.3,0.55,0.7,0.85,1] # [0.7]
 
 for neuropil_inclusion_factor in neuropil_inclusion_factors : 
 
@@ -13,4 +13,4 @@ for neuropil_inclusion_factor in neuropil_inclusion_factors :
         sys.argv = {'neuropil_inclusion_factor' : neuropil_inclusion_factor,
                     'neuropil_correction_factor' : neuropil_correction_factor}
         
-        exec(open('/home/user/lab-notebook/astrid/Tuning-Dataset.py').read())
+        exec(open('/home/user/lab-notebook/astrid/create_summaries/Tuning-Dataset.py').read())

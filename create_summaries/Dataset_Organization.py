@@ -6,24 +6,27 @@ folders = [
     #"PV-cells_WT_Adult_V1", 
     #"PV-cells_WT_Young_V1", 
     #"PV-cells_cond-GluN1-KO_Adult_V1", 
-    #"PYR-SynGCaMP_WT_V1",
+    "PYR-SynGCaMP_WT_V1",
     #"SST-cells_cond-GluN1-KO_Young_V1",
-    "SST-cells_cond-GluN1-KO_Adult_V1",
+    #"SST-cells_cond-GluN1-KO_Adult_V1",
     #"SST-cells_WT_Adult_V1",
     #"SST-cells_WT_Young_V1",
     # "SST-cells_cond-GluN1-KO_Adult_V1_Taddy",
     # "SST-cells_WT_Adult_V1_Taddy"
     #"Wild-Type",
     #"GluN1-KO"
+    #"SST_WT",
+    #"SST_GluN1",
+    #"SST_GluN3"
 ]
-#base_path =  "/home/user/DATA/Astrid/Taddy_data/OneDrive_1_9-3-2026"
+#base_path =  "/home/user/DATA/Astrid/Taddy_data/photodiode_aligned" # "/home/user/DATA/Astrid/Taddy_data/OneDrive_1_9-3-2026" #"/home/user/DATA/Astrid/Taddy_data"
 base_path =  '/home/user/DATA/Astrid/Cibele_data'
 
 quantity = 'dFoF' #'Deconvolved_correctedFluo' # 'dFoF' or 'Deconvolved'
-filtering_cond_name = None
 summary_folder = base_path + '/summary'
+filtering_cond_name = None
 
-# age intervals in Yound
+# age intervals in Young
 #AGE_INTERVALS = [\
 #    (15,19), (20,23), (24,27), (16,21), (22,27)]
 
