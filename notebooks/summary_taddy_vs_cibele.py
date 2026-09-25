@@ -4,19 +4,18 @@ sys.path += ["/home/user/lab-notebook/astrid"]
 
 from plot_general_tools import plot_tuning_responses_many_pop
 from responsiveness_and_brightness import plot_responsiveness_pie, plot_mean_F_val
+from utils.cell_type_color_codes import get_working_data_defaults
 #%%
-
-folders_cibele = ["SST-cells_WT_Adult_V1",
-    "SST-cells_cond-GluN1-KO_Adult_V1"]
-summary_path_cibele = ["/home/user/DATA/Astrid/Cibele_data/summary"] * len(folders_cibele)
-colors_cibele = [[(to_rgb('#12522eff'), 0.8),'lightgrey'], [(to_rgb('#5d1490ff'), 0.8),'lightgrey']]
+summary_path_cibele, folders_cibele, colors_cibele = get_working_data_defaults(experimenters = 'Cibele',
+                                                        folders_surnames = ['SST_WT', 'SST_GluN1_KO'],
+                                                        color_with_grey = True)
 
 
-folders_taddy = ["Wild-Type",
-    "GluN1-KO"
-    ]
-summary_path_taddy = ["/home/user/DATA/Astrid/Taddy_data/OneDrive_1_9-3-2026/summary"] * len(folders_taddy)
-colors_taddy = [[pt.tab10(1),'lightgrey'], [pt.tab10(4),'lightgrey']]
+
+
+summary_path_taddy, folders_taddy, colors_taddy = get_working_data_defaults(experimenters = 'Taddy',
+                                                        folders_surnames = ['SST_WT', 'SST_GluN1_KO'],
+                                                        color_with_grey = True)
 
 
 #%%
@@ -67,3 +66,26 @@ colors_without_grey = []
 for color in colors : 
     colors_without_grey.append(color[0])
 plot_mean_F_val(folders, 'correctedFluo0', colors_without_grey, ax_dict["C"], summary_path = summary_path)
+
+#%%Cibele vs Taddy  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+summary_path, folders, colors = get_working_data_defaults(experimenters = ['Cibele', 'Taddy'],
+                                                        folders_surnames = ['SST_WT', 'SST_WT'],
+                                                        color_with_grey = True)
+
+mosaic = """
+    AAAAAABBCC
+    AAAAAADDEE
+    AAAAAAFFGG
+
+    """
+
+fig = plt.figure(layout="constrained", figsize = (13,7))
+
+ax_dict = fig.subplot_mosaic(mosaic)
+
+plot_tuning_responses_many_pop(folders, colors, ax_dict["A"], summary_path = summary_path) 
+plot_responsiveness_pie(folders, colors, [ax_dict["B"], ax_dict["C"],ax_dict["D"], ax_dict["E"], ax_dict["F"], ax_dict["G"]], summary_path = summary_path)
+
+handles = create_legend(folders, colors, with_grey = False)
+ax_dict["A"].legend(handles, folders, bbox_to_anchor = (0.7,0.5), fontsize = 10)

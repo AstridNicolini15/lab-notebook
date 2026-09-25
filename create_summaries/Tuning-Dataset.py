@@ -14,9 +14,10 @@ from physion.analysis.read_NWB\
 from physion.analysis.episodes.build import EpisodeData
 from physion.analysis.protocols.orientation_tuning\
                 import compute_tuning_response_per_cells
-from tuning_dataset_tools import (get_summary_prefix_name, 
+from dataset_tools import (get_summary_prefix_name, 
                                     get_filtering_cond, 
                                     build_filtering_cond_quantities)
+from tuning_dataset_tools import *
 
 
 parallelized, debug = False, False 

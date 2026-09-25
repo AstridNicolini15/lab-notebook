@@ -15,10 +15,10 @@ from physion.analysis.protocols.contrast_sensitivity\
                         import compute_sensitivity_per_cells
 
 from physion.analysis.episodes.build import EpisodeData
-from arousal_summaries.contrast_summary_functions import *
-from arousal_summaries.arousal_common_fcts import (get_summary_prefix_name, 
+from dataset_tools import (get_summary_prefix_name, 
                                                     get_filtering_cond, 
                                                     build_filtering_cond_quantities)
+from contrast_dataset_tools import *
 
 parallelized, debug = False, False 
 

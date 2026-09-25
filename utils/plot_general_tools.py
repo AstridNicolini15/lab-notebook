@@ -7,13 +7,11 @@ os.chdir('/home/user/lab-notebook/astrid')
 sys.path += ['./physion/src']
 sys.path += ['./summary_plots']
 import physion.utils.plot_tools as pt
-from physion.analysis.read_NWB\
-                         import scan_folder_for_NWBfiles, Data
 from physion.analysis.episodes.build import EpisodeData
 from physion.analysis.protocols.orientation_tuning import get_tuning_responses, fit_gaussian 
 from physion.analysis.protocols.contrast_sensitivity import *
 import physion
-from propagated_uncertainty import *
+from utils.propagated_uncertainty import *
 
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches

@@ -2,52 +2,12 @@
 import sys
 sys.path += ["/home/user/lab-notebook/astrid"]
 
-from plot_general_tools import *
 import matplotlib as matplotlib
 import matplotlib.colors as mcolors
 
-#%% Cibele %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+from utils.plot_general_tools import *
+from utils.cell_type_color_codes import get_working_data_defaults
 
-folders = ["PV-cells_WT_Adult_V1", 
-    "SST-cells_WT_Adult_V1",
-    #"SST-cells_cond-GluN1-KO_Adult_V1",
-    ]
-
-summary_path = ["/home/user/DATA/Astrid/Cibele_data/summary"]*len(folders)
-
-colors = [[(*to_rgb('#b30a7bff'), 1.0),'lightgrey'],  [(*to_rgb('#12522eff'), 1.0),'lightgrey']]
-#colors = [[(*to_rgb('#12522eff'), 1.0),'lightgrey'], [(*to_rgb('#5d1490ff'), 1.0),'lightgrey']]
-
-#%%Cibele vs Taddy  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-summary_path = ["/home/user/DATA/Astrid/Cibele_data/summary", "/home/user/DATA/Astrid/Taddy_data/OneDrive_1_9-3-2026/summary"]
-#summary_path = ["/home/user/DATA/Astrid/Taddy_data/OneDrive_1_9-3-2026/summary",  "/home/user/DATA/Astrid/Taddy_data/OneDrive_1_9-3-2026/summary"]
-
-folders = ["SST-cells_WT_Adult_V1",
-    "Wild-Type",
-    #"GluN1-KO",
-    ]
-
-colors = [ [(*to_rgb('#12522eff'), 1.0),'lightgrey'], [pt.tab10(1),'lightgrey']]
-
-#colors = [[pt.tab10(1),'lightgrey'], [pt.tab10(4),'lightgrey']]
-
-mosaic = """
-    AAAAAABBCC
-    AAAAAADDEE
-    AAAAAAFFGG
-
-    """
-
-fig = plt.figure(layout="constrained", figsize = (13,7))
-
-ax_dict = fig.subplot_mosaic(mosaic)
-
-plot_tuning_responses_many_pop(folders, colors, ax_dict["A"], summary_path = summary_path) 
-plot_responsiveness_pie(folders, colors, [ax_dict["B"], ax_dict["C"],ax_dict["D"], ax_dict["E"], ax_dict["F"], ax_dict["G"]], summary_path = summary_path)
-
-handles = create_legend(folders, colors, with_grey = False)
-ax_dict["A"].legend(handles, folders, bbox_to_anchor = (0.7,0.5), fontsize = 10)
 
 #%% plot neuropil correction factor impact 
 
@@ -130,6 +90,7 @@ def plot_corrfact_legend_color_maps(colors, fig, axes, neuropil_correction_facto
 def create_multiple_corrfact_mosaic(N, alphabet_upper, alphabet_lower) : 
 
     """
+    Choice of function to create an automatic iterative mosaic on N 
     N = len(folders)
     """
     mosaic =  alphabet_upper[0]*12 

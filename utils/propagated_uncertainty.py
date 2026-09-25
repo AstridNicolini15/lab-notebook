@@ -1,4 +1,12 @@
 #%%%%%%%%%%%%%%%%%plots%%%%%%%%%%%%%%%%%%%%%%%
+import numpy as np 
+
+import sys
+sys.path += ["/home/user/lab-notebook/astrid/physion/src"]
+from physion.analysis.protocols.orientation_tuning import get_tuning_responses
+from physion.analysis.protocols.contrast_sensitivity import get_responses
+
+#%%
 def session_sem_with_indepedance_hypothesis_universal(Summaries, average_by = 'sessions') : #done very detailed because easily confusable
 
 
