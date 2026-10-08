@@ -5,6 +5,10 @@
   
 import sys
 sys.path += ["/home/user/lab-notebook/astrid/physion/src"]
+sys.path += ["/home/user/lab-notebook/astrid"]
+
+from general_tools.plot_general_tools import plot_tuning_responses_many_pop
+from general_tools.cell_type_color_codes import get_working_data_defaults, reshape_colors_with
 
 from physion.analysis.protocols.orientation_tuning import compute_selectivities
 
@@ -17,10 +21,6 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import to_rgb
 import physion.utils.plot_tools as pt
 
-
-from utils.plot_general_tools import plot_tuning_responses_many_pop
-from utils.cell_type_color_codes import get_working_data_defaults, reshape_colors_with
-
 # %%
 
 def get_gOSIs(Tunings, only_significant = True) : 
@@ -28,17 +28,18 @@ def get_gOSIs(Tunings, only_significant = True) :
     gOSIs = []
 
     angles = Tunings[0]['shifted_angle']
-    Radians = [radians(2*(angle + 22.5)) for angle in angles]
+    Radians = [np.deg2rad(2*(angle + 22.5)) for angle in angles]
 
     for T in Tunings : 
         session_gOSIs = []
 
         if only_significant : 
             Responses = T['Responses'][T['significant_ROIs']]
+            Responses = np.array([[max(x,0) for x in r ] for r in Responses]) #negatives are clipped
         else : 
             Responses = T['Responses']
 
-        for R in Responses : #to note : do not work with summary with 2d significances
+        for R in Responses : #warning : do not work with summary with 2d significances
 
             cell_gOSI = get_cell_gOSI(R, Radians)
             session_gOSIs.append(cell_gOSI)
@@ -54,9 +55,41 @@ def get_cell_gOSI(Responses, Radians) :
     Responses and Radians are both 1D arrays of dim = (1*8)
     """
 
-    cell_gOSI = np.sqrt(np.sum(Responses*np.cos(Radians))**2 + np.sum(Responses*np.sin(Radians))**2) / np.sum(np.abs(Responses))
+    cell_gOSI = np.sqrt(np.sum(Responses*np.cos(Radians))**2 + np.sum(Responses*np.sin(Radians))**2) / np.sum(Responses)
 
     return cell_gOSI
+
+
+def plot_gOSI(ax, filenames, colors, labels = None, x = None, mean_by = 'cells'): #with mean and std 
+
+    height = []
+    height_error = []
+    for filename in filenames : 
+        Tunings = np.load(filename, allow_pickle = True)
+        gOSIs = get_gOSIs(Tunings)
+
+        if mean_by == 'cells': 
+            gOSIs = np.concatenate(gOSIs)
+            height.append(np.mean(gOSIs))
+            height_error.append(np.std(gOSIs))
+            ax.set_title('mean by cells')
+
+        elif mean_by == 'sessions':
+            gOSIs = [np.mean(session_gosi) for session_gosi in gOSIs]
+            height.append(np.mean(gOSIs))
+            height_error.append(sem(gOSIs))
+
+    if x is None : 
+        x = np.arange(len(height))
+
+    ax.grid(True, linewidth = 1, axis = 'y')
+    ax.bar(x = x, height = height, width = 0.75, color = colors)
+    ax.errorbar(x=x, y= height, yerr=height_error, fmt='.', elinewidth=1, capthick=1,  capsize = 5, color = 'black')
+    if labels is not None : 
+        ax.set_xticks(ticks = x, labels = labels, rotation = 45)
+    ax.set_ylabel('gOSI')
+    #ax.set_title('negative clipped')
+
 
 #%% population gOSI at different inclusion factor
 
@@ -86,7 +119,7 @@ for experimenter in ['Cibele', 'Taddy'] :
                         'title' : 'neuropil inclusion \n factor = '+ str(neuropil_inclusion_factor),
                         'ylims' : (0,1.1)}
         
-        plot_tuning_responses_many_pop(folders, colors, ax, special_dict = special_dict, summary_path = summary_path)
+        plot_tuning_responses_many_pop(folders, colors, ax, special_dict = special_dict, summary_path = summary_path, clip_negative = False)
 
     colors = reshape_colors_with(colors, second_cond_low_alpha = True, second_cond_alpha = 0.3) 
     colors = np.concatenate([[c]*3 for c in np.concatenate(colors)])
@@ -94,7 +127,7 @@ for experimenter in ['Cibele', 'Taddy'] :
     x = [0,1,2,4,5,6,10,11,12,14,15,16]
     height = []
 
-    for folder in folders : 
+    for i, folder in enumerate(folders) : 
 
         for key in ['%s_contrast-1.0' % folder,
                     '%s_contrast-0.5' % folder]:
@@ -102,7 +135,7 @@ for experimenter in ['Cibele', 'Taddy'] :
             for inclusion_factor in [1.15, 2, 3] : 
 
                 prefixe = 'inclusion_factor-' + str(inclusion_factor) + '_correction_factor-0.7_'
-                Tunings = np.load(summary_path + '/' + prefixe + 'Tunings_%s.npy' % key, allow_pickle=True)
+                Tunings = np.load(summary_path[i] + '/' + prefixe + 'Tunings_%s.npy' % key, allow_pickle=True)
                 gOSIs = get_gOSIs(Tunings)
                 height.append(np.mean([np.mean(session_gOSIs) for session_gOSIs in gOSIs])) #average of sessions averages
 
@@ -121,6 +154,7 @@ for experimenter in ['Cibele', 'Taddy'] :
     ax_dict["D"].set_xlabel('Neuropil inclusion factor')
     ax_dict["D"].set_ylabel('gOSI')
     ax_dict["D"].set_ylim(0,0.45)
+    ax_dict["D"].set_title('negative clipped')
 
 
 #%% cells's paired gOSI at contrast 1 and 0.5, distribution and wilcoxon stat test 
@@ -132,7 +166,7 @@ In this cell : we plot the cells paired gOSIs at contrast 1 and 0.5
     + the histogram of the paired difference between gOSIs
     + print the wilcoxon pval of the distribution of the paired difference between gOSIs
 
-Note : only cells significant at contrast 1 and 0.5 are included
+Note : only cells significant at both contrast 1 and 0.5 are included
 """
 
 for experimenter in ['Cibele', 'Taddy'] : 
@@ -148,7 +182,7 @@ for experimenter in ['Cibele', 'Taddy'] :
         for key in ['%s_contrast-1.0' % folder,
                     '%s_contrast-0.5' % folder]:
 
-            Tunings = np.load(summary_path + '/' + 'Tunings_%s.npy' % key, allow_pickle=True)
+            Tunings = np.load(summary_path[i] + '/' + 'Tunings_%s.npy' % key, allow_pickle=True)
 
             gOSIs.append(np.concatenate(get_gOSIs(Tunings, only_significant = False)))
             concatenate_significant_cells.append(np.concatenate([T['significant_ROIs'] for T in Tunings]))
@@ -184,7 +218,13 @@ for experimenter in ['Cibele', 'Taddy'] :
         ax[1].set_xlabel('diff gOSI values')
         ax[1].set_ylabel('%')
         ax[1].set_yticks(ticks = [0,0.125,0.25], labels = [0,0.125,0.25])
-        ax[1].set_xlim(-0.8,0.8)
+        #ax[1].set_xlim(-0.8,0.8)
         ax[1].annotate(text = 'Wilcoxon test \np value = \n' + str(stats.wilcoxon(diff_gOSI)[1]), xy = (0,0.25), fontsize = 9)
 
         plt.show()
+
+
+key = '%s_contrast-1.0' % folder
+summary_prefixe_name = 'inclusion_factor-4_correction_factor-0.7_'
+Tunings = np.load(summary_path[i] + '/' + summary_prefixe_name + 'Tunings_%s.npy' % key, allow_pickle=True)
+gOSIs = get_gOSIs(Tunings)

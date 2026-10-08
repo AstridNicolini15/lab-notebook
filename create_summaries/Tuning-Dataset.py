@@ -34,7 +34,6 @@ if filtering_cond_name is not None :
 from Preprocessing_Settings import get_dFoF_params, get_stat_test_props
 
 special_dFoF_params = sys.argv 
-print(special_dFoF_params)
 if special_dFoF_params == ['Tuning-Dataset.py']:
     special_dFoF_params = None
 
@@ -106,6 +105,9 @@ def process_file(filename, i, c, quantity, filtering_cond_name):
             Tuning['nROIs_responsive'] = np.sum(Tuning['significant_ROIs'])
             Tuning['subject'] = data.nwbfile.subject.subject_id
 
+            if dFoF_parameters['roi_specific_neuropil_correction_factor'] : 
+                Tuning['neuropil_correction_factors'] = np.concatenate(data.neuropil_correction_factor)
+
             np.save(os.path.join(summary_folder, 'temp', 
                                  'Tuning-%s-%i.npy' % (c, i)),
                     Tuning)
@@ -144,7 +146,6 @@ if __name__=='__main__':
     for n in range(Nstart, Nend):
 
         c = list(datasets.keys())[n]
-
         if filtering_cond_name:
             prefered_angles_dataset = get_prefered_angles_dataset(datasets[c]['datafolder'], summary_folder, c.split('_contrast-')[1])
 
@@ -165,7 +166,7 @@ if __name__=='__main__':
         #   FILTER:
         # ----------
         # 1) protocol type: orientation tuning
-        cond = np.array([np.sum(['8orientation' in p for p in protocols])\
+        cond = np.array([np.sum(['ff-gratings-8orientation-2contrasts-15repeats' in p for p in protocols])\
                         for protocols in DATASET['protocols']], dtype=bool)
         # 2) age condition (not None only if young)
         if (datasets[c]['age_interval'] is not None):
@@ -218,7 +219,8 @@ if __name__=='__main__':
                     Tunings.append(Tuning)
 
             # # saving data
-            summary_prefix_name = get_summary_prefix_name(quantity, filtering_cond_name, special_dFoF_params)
+            dFoF_parameters = get_dFoF_params(c, special_dFoF_params)
+            summary_prefix_name = get_summary_prefix_name(quantity, filtering_cond_name, dFoF_parameters, special_dFoF_params)
 
             np.save(os.path.join(summary_folder, summary_prefix_name + 'Tunings_%s.npy' % c), Tunings)
 
@@ -232,7 +234,7 @@ if __name__=='__main__':
 
         print('-----------------------------------------------------------------')
         print('=================================================================')
-    # shutil.rmtree(os.path.join(summary_folder, 'temp'))
+    shutil.rmtree(os.path.join(summary_folder, 'temp'))
 
 # %%
 if False:

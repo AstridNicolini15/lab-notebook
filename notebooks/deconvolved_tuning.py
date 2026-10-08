@@ -2,7 +2,7 @@
 import sys
 sys.path += ["/home/user/lab-notebook/astrid"]
 
-from utils.plot_general_tools import plot_tuning_responses_many_pop, get_gaussian_fit_and_uncertainty
+from general_tools.plot_general_tools import plot_tuning_responses_many_pop, get_gaussian_fit_and_uncertainty
 
 
 #%%

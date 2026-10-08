@@ -148,7 +148,7 @@ if __name__=='__main__':
         
         # FILTER
         # 1) protocol type: contrast sensitivity
-        cond = np.array([np.sum(['8contrast' in p for p in protocols])\
+        cond = np.array([np.sum(['ff-gratings-2orientations-8contrasts-15repeats' in p for p in protocols])\
                         for protocols in DATASET['protocols']], dtype=bool)
         # 2) age condition
         if datasets[c]['age_interval'] is not None:

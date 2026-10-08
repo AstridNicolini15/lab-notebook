@@ -1,18 +1,22 @@
 #%%
-import sys
+import os, sys 
+os.chdir('/home/user/lab-notebook/astrid')
 sys.path += ["/home/user/lab-notebook/astrid"]
 
 import matplotlib as matplotlib
 import matplotlib.colors as mcolors
 
-from utils.plot_general_tools import *
-from utils.cell_type_color_codes import get_working_data_defaults
+from general_tools.plot_general_tools import *
+from general_tools.cell_type_color_codes import get_working_data_defaults
 
 
 #%% plot neuropil correction factor impact 
 
 
-colors = [[pt.tab10(1),'lightgrey'], [pt.tab10(4),'lightgrey'], [pt.tab10(5),'lightgrey']]
+summary_path, folders, colors= get_working_data_defaults(experimenters = ['Cibele'],
+                                                        folders_surnames = ['PYR_WT'],
+                                                        color_with_grey=True)
+
 neuropil_correction_factors = [0,0.15,0.3,0.55,0.7,0.85,1]
 
 fig = plt.figure(figsize = (7*len(folders),10))
@@ -22,7 +26,7 @@ for i, folder in enumerate(folders) :
 axes = get_multiple_corrfact_axes_and_implement_mosaic(folders, fig)
 
 for i in range(len(folders)) : 
-    special_dict = {'base_name' : 'inclusion_factor-1.15_correction_factor-'}
+    special_dict = {'base_name' : 'inclusion_factor-0_correction_factor-'}
     plot_orientation_tuning_multiple_corrfact(folders[i],
                         colors=colors[i],
                         neuropil_correction_factors = neuropil_correction_factors,
@@ -52,15 +56,14 @@ def plot_orientation_tuning_multiple_corrfact(folder,
         for iter_y,neuropil_correction_factor in enumerate(neuropil_correction_factors) :
 
             special_dict['name'] = special_dict['base_name']  + str(neuropil_correction_factor) + '_'
+            Tunings = np.load(summary_path[i] + '/' + special_dict['name'] + 'Tunings_%s.npy' % key, allow_pickle=True) 
 
             xy = (110+(25*iter_x),0.22-(0.03*iter_y))
 
-            draw_tuning_curve(key, 
-                    special_dict = special_dict, 
-                    summary_path = summary_path,
+            draw_tuning_curve(Tunings,
                     ax = ax, 
                     color = color,
-                    alpha = 0.3 + iter_y/10,
+                    alpha = 0.1 + iter_y*(0.9/len(neuropil_correction_factors)),
                     xy = xy)
 
     add_axis_labels_to_plot(ax = ax)

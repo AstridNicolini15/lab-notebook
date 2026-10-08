@@ -2,7 +2,7 @@
 import sys
 sys.path += ["/home/user/lab-notebook/astrid"]
 
-from utils.plot_general_tools import *
+from general_tools.plot_general_tools import *
 import numpy as np
 
 #%%
