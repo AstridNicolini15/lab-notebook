@@ -2,6 +2,7 @@
 from scipy.stats import sem
 'PV and SST orientation tuning comparaison'
 
+
 summary_path, folders, colors= get_working_data_defaults(experimenters = 'Cibele',
                                                         folders_surnames = ['PV_WT', 'SST_WT'],
                                                         color_with_grey = True)
