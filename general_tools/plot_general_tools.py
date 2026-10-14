@@ -6,13 +6,14 @@ from scipy.stats import sem
 
 from general_tools.propagated_uncertainty import *
 from general_tools.general_tools import *
-
+from create_summaries.Preprocessing_Settings import get_dFoF_params
 sys.path.insert(0,'/home/user/lab-notebook/astrid/physion/src')
 
 import physion.utils.plot_tools as pt
 from physion.analysis.episodes.build import EpisodeData
 from physion.analysis.protocols.orientation_tuning import get_tuning_responses, fit_gaussian 
 from physion.analysis.protocols.contrast_sensitivity import *
+
 import physion
 
 import matplotlib.pyplot as plt
@@ -21,6 +22,7 @@ from matplotlib.colors import to_rgb
 
 
 #%%
+#---------ORIENTATION TUNING AND CONTRAST SENSIVITY RESPONSES----------#
 
 def draw_tuning_curve(Tunings, 
                     ax, 
@@ -52,8 +54,7 @@ def draw_tuning_curve(Tunings,
 
     x = np.linspace(-30, 180-30, 100)
 
-    ax.scatter(x_angles, np.mean(Responses, axis=0), 
-            color=color, alpha = alpha)
+    ax.scatter(x_angles, np.mean(Responses, axis=0), color=color, alpha = alpha)
 
     ax.plot(x, func(x), lw=lw, color=color, alpha = alpha)
 
@@ -71,6 +72,7 @@ def draw_tuning_curve(Tunings,
     ax.errorbar(Tunings[0]['shifted_angle'], 
             np.nanmean(Responses, axis=0),
             yerr=uncertainty_sy,
+            alpha = alpha,
             elinewidth = 1,
             fmt = '.',
             color=color, ms = ms)
@@ -78,12 +80,12 @@ def draw_tuning_curve(Tunings,
 
 
 def draw_sensitivitie_curve(Sensitivities,
-                            ax = None, 
+                            ax, 
                             color = None,
                             alpha = 1,
                             xy = (0,0),
-                            uncertainty_sy = None,
-                            graph_width_dict = {'lw' : 2, 'ms' : 3, 'fontsize' : 7}
+                            uncertainty_sy = 'propagated',
+                            graph_width_dict = {'lw' : 2, 'ms' : 3, 'fontsize' : 4}
                             ):
 
 
@@ -93,7 +95,8 @@ def draw_sensitivitie_curve(Sensitivities,
                                 for S in Sensitivities] #get significant responses
 
     n_cells = np.sum([np.sum(np.sum(S['significant_pos'] + S['significant_neg'], axis = 1).astype(bool)) for S in Sensitivities]) #TO CHECKs
-    if uncertainty_sy == 'sem' : 
+
+    if uncertainty_sy == 'propagated' : 
         uncertainty_sy = session_sem_with_indepedance_hypothesis_universal(Sensitivities)
 
     #draw
@@ -105,136 +108,86 @@ def draw_sensitivitie_curve(Sensitivities,
         np.nanmean(Responses, axis=0), 
         sy=uncertainty_sy,
         color=color,
+        alpha = alpha,
         ax=ax)
                 
-    ax.annotate(text = 'N= ' + str(n_cells), xy = xy, color = color, fontsize = fontsize)
+    ax.annotate(text = 'N= ' + str(n_cells), xy = xy, color = color, alpha = alpha, fontsize = fontsize)
     
+def plot_responses(ax,
+                folders, 
+                colors,  
+                alphas = None,
+                summary_protocol = 'Tunings',
+                clip_negative = True,
+                special_dict = {}, 
+                summary_paths = ["/home/user/DATA/Astrid/Cibele_data/summary"],
+                sensitivitie_uncertainty = 'propagated') :
 
-def add_axis_labels_to_plot(ax, plot_type = 'Tuning', fontsize = 13):
-
-    if plot_type == 'Tuning' : 
-        ticks = [-22.5,   0. ,  22.5,  45. ,  67.5,  90. , 112.5, 135. ]
-        ax.set_xticks(ticks = ticks, labels = ['%i' % a if (a in [0, 90]) else '' for a in ticks], fontsize = fontsize)
-        ax.set_ylabel('norm. $\\delta$ $\\Delta$F/F', fontsize = fontsize)
-        ax.set_xlabel('angle ($^o$) from pref.', fontsize = fontsize)
-
-    if plot_type == 'Sensitivities' : 
-        ax.set_xticks(ticks = np.arange(3)*0.5)
-        ax.set_ylabel('$\\delta$ $\\Delta$F/F', fontsize = fontsize)
-        ax.set_xlabel('contrast', fontsize = fontsize)
-
-          
-def create_legend(folders, colors) :  #to modify to have an ax of a fig and to add the legend 
-
-    if len(colors[0]) == 2 and len(colors) == len(folders) : 
-        folders = np.concatenate([[f]*2 for f in folders]).tolist()
-        colors = [(c[0],c[1]) for c in colors]
-
-    handles = []
-    for i, folder in enumerate(folders) : 
-        patch = mpatches.Patch(color=colors[i], label=folder)
-        handles.append(patch)
-
-    return handles
-
-
-def plot_tuning_responses_many_pop(folders, 
-                                   colors, 
-                                   ax, 
-                                   special_dict = {}, 
-                                   summary_path =  [ "/home/user/DATA/Astrid/Cibele_data/summary"],
-                                   clip_negative = False) : 
+    if type(folders) == str: 
+        folders = [folders]
+    summary_paths = correct_summary_form(summary_paths, folders)
+    summary_prefix_name, title, ylims = extract_special_dict(special_dict, folders)
+    if alphas == None : 
+        alphas = [None for i in range(len(folders))]
     
-    summary_path = correct_summary_form(summary_path, folders)
-
-    ylims = [0,1.05]
-    if bool(special_dict): 
-        ax.set_title(special_dict['title'], fontsize = 13)
-        ylims = special_dict['ylims']
 
     for i,folder in enumerate(folders) : 
-
-        keys =  ['%s_contrast-1.0' % folder,
-                '%s_contrast-0.5' % folder]
         
-        for j, key in enumerate(keys) :
-
-            if 'name' in special_dict.keys() : 
-                Tunings = np.load(summary_path[i] + '/' + special_dict['name'] + 'Tunings_%s.npy' % key, allow_pickle=True) 
-            else : 
-                Tunings = np.load(summary_path[i] + '/Tunings_%s.npy' % key, allow_pickle=True)
-                 
-            xy = (115,1-(0.04*j)-(0.08*i))
-            draw_tuning_curve(Tunings,
-                    ax = ax, 
-                    color = colors[i][j],
-                    alpha = 1,
-                    xy = xy, 
-                    graph_width_dict = {'lw' : 3, 'ms' : 5, 'fontsize' : 10},
-                    clip_negative = clip_negative) 
-
-
-    add_axis_labels_to_plot(ax = ax)
-    ax.set_ylim(ylims)
-
-
-def plot_contrast_responses_many_pop(folders, 
-                                     colors, 
-                                     ax, 
-                                     special_dict = {}, 
-                                     summary_path = '/home/user/DATA/Astrid/summary') : 
-
-    summary_path = correct_summary_form(summary_path, folders)
-
-    ylims = None
-    if bool(special_dict): 
-        ax.set_title(special_dict['title'], fontsize = 13)
-        ylims = special_dict['ylims']
-
-    for i,folder in enumerate(folders) : 
-
-        keys = ['%s_angle-0.0' % folder, 
-            '%s_angle-90.0' % folder]
+        keys = get_folder_keys(folder, summary_protocol = summary_protocol)
 
         for j, key in enumerate(keys) :
+        
+            if summary_protocol == 'Tunings' : 
 
-            #load
-            if 'name' in special_dict.keys() : 
-                Sensitivities = np.load(summary_path[i] + '/' + special_dict['name'] + 'Sensitivities_%s.npy' % key, allow_pickle=True) 
-            else : 
-                Sensitivities = np.load(summary_path[i] + '/Sensitivities_%s.npy' % key, allow_pickle=True)  
+                Tunings = np.load(summary_paths[i] + '/' + summary_prefix_name[i] + 'Tunings_%s.npy' % key, allow_pickle=True) 
 
-            xy = (0.8,0.1-(0.04*j)-(0.08*i))
-            draw_sensitivitie_curve(Sensitivities,
-                            ax = ax, 
-                            color = colors[i][j],
-                            alpha = 1,
-                            xy = xy,
-                            graph_width_dict = {'lw' : 2, 'ms' : 3, 'fontsize' : 10})
-            
-    add_axis_labels_to_plot(ax, plot_type = 'Sensitivities')
+                xy =  (100+(30*j),1-(0.03*i))
+                draw_tuning_curve(Tunings,
+                        ax = ax, 
+                        color = colors[i][j],
+                        alpha = alphas[i],
+                        xy = xy, 
+                        graph_width_dict = {'lw' : 3, 'ms' : 5, 'fontsize' : 10},
+                        clip_negative = clip_negative) 
+
+
+            elif summary_protocol == 'Sensitivities' : 
+                
+                Sensitivities = np.load(summary_paths[i] + '/' + summary_prefix_name[i] + 'Sensitivities_%s.npy' % key, allow_pickle=True) 
+
+                xy = (0.05+(0.1*j),0.65-(0.04*i))
+                draw_sensitivitie_curve(Sensitivities,
+                        ax = ax, 
+                        color = colors[i][j],
+                        alpha =  alphas[i],
+                        xy = xy,
+                        uncertainty_sy = sensitivitie_uncertainty,
+                        graph_width_dict = {'lw' : 2, 'ms' : 3, 'fontsize' : 8})
+        
+    add_axis_labels_to_plot(ax, plot_type = summary_protocol)
+
+    ax.set_title(title, fontsize = 13)
     ax.set_ylim(ylims)
 
 #%%
 #---------RESPONSIVENESS TO VISUAL STIM----------#
-def get_responsiveness_to_visual_stim(summary, total_on = 'nROIs_final'):
+def get_responsiveness_to_visual_stim(summary, total_on):
 
     """
     The % of significant ROIs can be calculated on the total number of valid ROIs (total_on = 'nROIs_final')
     or on the total number of original ROIs (total_on = 'nROIs_original')
     """
-    summary_protocol = get_summary_protocol(summary)
 
-    if summary_protocol == 'Tunings': 
+    if 'significant_ROIs' in summary[0].keys(): 
         n_resp = np.sum([np.sum(Tuning['significant_ROIs']) for Tuning in summary])
         n_nonresp = np.sum([np.sum(~Tuning['significant_ROIs']) for Tuning in summary])
 
-    elif summary_protocol == 'Sensitivities': 
-        print('to check')
-        #cell_responsiveness = np.concatenate([np.sum(S['significant_pos'] + S['significant_neg'], axis = 1) for S in Sensitivities])
+    elif 'significant_pos' in summary[0].keys(): 
+        print('warning : positive and negative significants are considered')
+        cells_responsiveness_by_contrasts = np.concatenate([np.sum(S['significant_pos'] + S['significant_neg'], axis = 1) for S in summary])
 
-        #n_resp = len([x for x in cell_responsiveness if x !=0])
-        #n_nonresp = len([x for x in cell_responsiveness if x ==0])
+        n_resp = len([x for x in cells_responsiveness_by_contrasts if x!=0])
+        n_nonresp = len([x for x in cells_responsiveness_by_contrasts if x==0])
 
     n_total = np.sum([s[total_on] for s in summary])
 
@@ -244,40 +197,47 @@ def get_responsiveness_to_visual_stim(summary, total_on = 'nROIs_final'):
     return perc_resp, perc_nonresp
 
 
-def plot_responsiveness_pie(folders, colors_list, axes, total_on = 'nROIs_final', special_dict = None, summary_protocol = 'Tunings', summary_path = '/home/user/DATA/Astrid/summary') : 
+def draw_responsiveness_pie(ax, summary, color, total_on = 'nROIs_final') : 
 
-    summary_prefix_name = extract_special_dict(special_dict)[0]
-    summary_path = correct_summary_form(summary_path, folders)
+    perc_resp, perc_nonresp = get_responsiveness_to_visual_stim(summary, total_on = total_on)
+    ax.pie([perc_resp, perc_nonresp], 
+                    colors = [color, 'white'],
+                    startangle = 90,
+                    wedgeprops={"edgecolor":"black",'linewidth': 1, 'width' : 0.6},
+                    textprops = {"fontsize" : 10})
+    
+    ax.annotate(text = f'{perc_resp:.1f}% \n resp', xy= (-1.2,1), color = color, fontsize = 13)
+    if total_on == 'nROIs_original' : 
+        print('WARNING BUG : percentages are correct but pies are not coherent. idk why')
+        ax.annotate(text = 'total on on nROIs_original',  xy= (0,0.7), fontsize = 13) #position to correct
+
+
+
+def plot_responsiveness_pies(axes, folders, colors, total_on = 'nROIs_final', special_dict = None, summary_protocol = 'Tunings', summary_paths = ["/home/user/DATA/Astrid/Cibele_data/summary"]):
+
+    summary_prefix_name = extract_special_dict(special_dict, folders)[0]
+    summary_paths = correct_summary_form(summary_paths, folders)
 
     k = 0
     for i,folder in enumerate(folders) : 
 
         keys = get_folder_keys(folder, summary_protocol = summary_protocol)
+        
         for j, key in enumerate(keys):
 
-            summary = np.load(summary_path[i] + '/'+ summary_prefix_name + summary_protocol + '_' + key + '.npy', allow_pickle=True) 
-            perc_resp, perc_nonresp = get_responsiveness_to_visual_stim(summary, total_on = total_on)
-            axes[k].pie([perc_resp, perc_nonresp], 
-                            colors = colors_list[i], 
-                            startangle = 90,
-                            wedgeprops={"edgecolor":"black",'linewidth': 1, 'width' : 0.6},
-                            textprops = {"fontsize" : 10})
-            
-            axes[k].annotate(text = f'{perc_resp:.1f}% \n resp', xy= (-1.2,1), color = colors_list[i][0], fontsize = 13)
+            summary = np.load(summary_paths[i] + '/'+ summary_prefix_name[i//2] + summary_protocol + '_' + key + '.npy', allow_pickle=True) 
+            draw_responsiveness_pie(axes[k], summary, colors[i], total_on = total_on)
             k+=1
-    if total_on == 'nROIs_original' : 
-        print('WARNING BUG : percentages are correct but pies are not coherent. idk why')
-        axes[0].annotate(text = 'total on on nROIs_original',  xy= (0,0.7), fontsize = 13) #position to correct
 
-    axes[0].set_title('half contrast', color = 'black', loc = 'left', fontsize = 17, pad = 35)
-    axes[1].set_title('full contrast', color = 'black', loc = 'left', fontsize = 17, pad = 35)
+        axes[k-2].set_title('half contrast', color = 'black', loc = 'left', fontsize = 10, pad = 35)
+        axes[k-1].set_title('full contrast', color = 'black', loc = 'left', fontsize = 10, pad = 35)
 
 
 
 #%%
 #---------MEAN FLUORESCENCE LEVEL----------#
 
-def get_fluorescence_level(nwb_filename_list, dFoF_parameters, F_value = 'correctedFluo0') : 
+def get_fluorescence_level(nwb_filenames, dFoF_parameters, F_value = 'correctedFluo0') : 
 
     '''
     F_value can be : 'dFoF', 'correctedFluo0','F0' or 'rawFluo'
@@ -287,7 +247,7 @@ def get_fluorescence_level(nwb_filename_list, dFoF_parameters, F_value = 'correc
 
     Fval = []
 
-    for filename in nwb_filename_list : 
+    for filename in nwb_filenames : 
 
         data = physion.analysis.read_NWB.Data(filename, verbose=False) 
         data.build_dFoF(**dFoF_parameters, verbose=False)
@@ -299,9 +259,9 @@ def get_fluorescence_level(nwb_filename_list, dFoF_parameters, F_value = 'correc
     return Fval
 
 
-def plot_mean_F_val(folders, F_value, colors, ax, special_dict = None, summary_protocol = 'Tunings', summary_path =  ['/home/user/DATA/Astrid/summary']) :
+def plot_mean_F_val(ax, folders, colors, F_value, summary_paths = ['/home/user/DATA/Astrid/summary'], summary_protocol = 'Tunings', special_dict = None) :
 
-    summary_paths = correct_summary_form(summary_path, folders)
+    summary_paths = correct_summary_form(summary_paths, folders)
 
     x = np.arange(0,len(folders))
     y = []
@@ -311,10 +271,9 @@ def plot_mean_F_val(folders, F_value, colors, ax, special_dict = None, summary_p
     for folder, summary_path in zip(folders, summary_paths) : 
         dFoF_parameters = get_dFoF_params(folder, None)
         dFoF_parameters['with_correctedFluo_and_F0'] = True
-        summary_cond1, summary_cond2 = load_summaries_one_folder(folder, special_dict = special_dict, summary_protocol = summary_protocol, summary_path = summary_path)
-        nwb_filename_list = [s['datafile'] for s in summary_cond1]
+        nwb_filenames = get_nwb_filenames_from_summary(folder, summary_path, summary_protocol, special_dict)
 
-        Fval = get_fluorescence_level(nwb_filename_list, dFoF_parameters = dFoF_parameters, F_value = F_value)
+        Fval = get_fluorescence_level(nwb_filenames, dFoF_parameters = dFoF_parameters, F_value = F_value)
         y.append(np.mean(Fval))
         y_err.append(stats.sem(Fval))
         n_cells_pop.append(len(Fval))
@@ -327,4 +286,35 @@ def plot_mean_F_val(folders, F_value, colors, ax, special_dict = None, summary_p
     ymax = ax.get_ylim()[1]
     for i in range(len(folders)) : 
         ax.text(s=' N=\n'+str(n_cells_pop[i]),  x = x[i] - 0.1, y = ymax/22, rotation = 'horizontal', fontsize = 10, color = 'white')
+
+#%% 
+#---------SUPPORT FUNCTIONS----------#
+
+def add_axis_labels_to_plot(ax, plot_type = 'Tunings', fontsize = 13):
+
+    if plot_type == 'Tunings' : 
+        ticks = [-22.5,   0. ,  22.5,  45. ,  67.5,  90. , 112.5, 135. ]
+        ax.set_xticks(ticks = ticks, labels = ['%i' % a if (a in [0, 90]) else '' for a in ticks], fontsize = fontsize)
+        ax.set_ylabel('norm. $\\delta$ $\\Delta$F/F', fontsize = fontsize)
+        ax.set_xlabel('angle ($^o$) from pref.', fontsize = fontsize)
+
+    if plot_type == 'Sensitivities' : 
+        ax.set_xticks(ticks = np.arange(3)*0.5)
+        ax.set_ylabel('$\\delta$ $\\Delta$F/F', fontsize = fontsize)
+        ax.set_xlabel('contrast', fontsize = fontsize)
+
+          
+def add_legend_to_plot(ax, labels, colors, loc = 'lower left', bbox_to_anchor = None) :  #ax can be fig 
+
+    if len(colors[0]) == 2 and len(colors) == len(labels) : #include lightgrey control cond in legend
+        labels = np.concatenate([[label]*2 for label in labels]).tolist()
+        colors = [(c[0],c[1]) for c in colors]
+
+    handles = []
+    for i, label in enumerate(labels) : 
+        patch = mpatches.Patch(color=colors[i], label=label)
+        handles.append(patch)
+
+    ax.legend(handles = handles, labels = labels, loc = loc, bbox_to_anchor = bbox_to_anchor)
+
 
