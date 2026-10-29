@@ -16,8 +16,8 @@ from physion.analysis.protocols.contrast_sensitivity\
 
 from physion.analysis.episodes.build import EpisodeData
 from dataset_tools import (get_summary_prefix_name, 
-                                                    get_filtering_cond, 
-                                                    build_filtering_cond_quantities)
+                            get_filtering_cond, 
+                            build_filtering_cond_quantities)
 from contrast_dataset_tools import *
 
 parallelized, debug = False, False 
@@ -28,10 +28,10 @@ datasets = datasets_func('angle', [0., 90.])
 
 from Preprocessing_Settings import get_dFoF_params, get_stat_test_props
 
-special_dFoF_params = sys.argv 
-if special_dFoF_params == ['Contrast-Dataset.py']:
+if sys.argv == ['Contrast-Dataset.py']:
     special_dFoF_params = None
-
+else : 
+    special_dFoF_params = sys.argv 
 # %%
 # to be a valid dataset:
 nMIN_DATAFILES = 2
@@ -55,14 +55,13 @@ def process_file(filename, i, c, quantity, filtering_cond_name):
     protocol_name=[p for p in data.protocols if '8contrast' in p][0]
     data.build_dFoF(**dFoF_parameters, verbose=False)
 
+    if quantity[:6] == 'Zscore' :
+        data.build_Zscore(quantity[7:])
+
     if quantity[:11] == 'Deconvolved':
         #setattr(data, quantity, data.correctedFluo - data.correctedFluo0)
         data.build_Deconvolved(Tau = 1.5, quantity = quantity[12:])
-        
-        stat_test_props=dict(interval_pre=[-1.,-0.0],
-                    interval_post=[0.0, 1.0],                                   
-                    test='ttest',                                            
-                    sign='positive')
+        stat_test_props['interval_post']=[0.0, 1.0] 
 
     quantities = [quantity]
 
@@ -77,11 +76,7 @@ def process_file(filename, i, c, quantity, filtering_cond_name):
                                     protocol_name=protocol_name, 
                                     verbose=False)
             
-            if filtering_cond_name:
-                filtering_cond = get_filtering_cond(filtering_cond_name, Episodes)
-
-            else: 
-                filtering_cond = None
+            filtering_cond = get_filtering_cond(filtering_cond_name, Episodes)
 
             Sensitivity = compute_sensitivity_per_cells(data, Episodes, 
                                                         quantity=quantity,
@@ -89,8 +84,8 @@ def process_file(filename, i, c, quantity, filtering_cond_name):
                                                         response_significance_threshold = response_significance_threshold, 
                                                         filtering_cond = filtering_cond, 
                                                         angle = float(c.split('angle-')[1][:3]))
-
-            Sensitivity = fill_missing_contrast_values_with_nans(Sensitivity, Episodes)
+            if filtering_cond_name :
+                Sensitivity = fill_missing_contrast_values_with_nans(Sensitivity, Episodes)
 
             Sensitivity['datafile'] = filename
             Sensitivity['nROIs_original'] = data.original_nROIs
@@ -118,7 +113,6 @@ def process_file(filename, i, c, quantity, filtering_cond_name):
 
 if __name__=='__main__':
 
-    import physion
     from physion.assembling.dataset import read_spreadsheet
     cpus = multiprocessing.cpu_count()-1 # leaving 1 cpu for the rest
 
@@ -202,7 +196,7 @@ if __name__=='__main__':
 
             # # saving data
             summary_prefix_name = get_summary_prefix_name(quantity, filtering_cond_name, special_dFoF_params)
-
+            
             np.save(os.path.join(summary_folder, summary_prefix_name + 'Sensitivities_%s.npy' % c), 
                     Sensitivities)
 

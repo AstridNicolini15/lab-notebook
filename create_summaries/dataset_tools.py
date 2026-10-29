@@ -17,24 +17,19 @@ from physion.analysis.protocols.contrast_sensitivity import *
 
 #%%
 
-def get_summary_prefix_name(quantity, filtering_cond_name, dFoF_params, special_dFoF_params) :
+def get_summary_prefix_name(quantity, filtering_cond_name, special_dFoF_params) :
 
     if quantity == 'dFoF' : 
         summary_prefix_name = ''
-    elif quantity[:11] == 'Deconvolved' : 
-        summary_prefix_name = quantity + '_'
     else : 
-        raise ValueError("quantity should be either 'Deconvolved_something' or 'dFoF'")
+        summary_prefix_name = quantity + '_'
 
     if filtering_cond_name is not None : 
         summary_prefix_name += filtering_cond_name  + '_' #Run or Rest for exemple
 
     if special_dFoF_params is not None: 
-        summary_prefix_name += 'inclusion_factor-%s_correction_factor-%s_' % (dFoF_params['roi_to_neuropil_fluo_inclusion_factor'], dFoF_params['neuropil_correction_factor'])
-
-    if dFoF_params['roi_specific_neuropil_correction_factor'] :
-        summary_prefix_name += 'allen_neuropil_'
-
+        for key in special_dFoF_params.keys(): 
+            summary_prefix_name += key + '_' + str(special_dFoF_params[key]) + '_'
 
     return summary_prefix_name
 
@@ -42,29 +37,34 @@ def get_summary_prefix_name(quantity, filtering_cond_name, dFoF_params, special_
 def build_filtering_cond_quantities(filtering_cond_name, data, quantities):
 
     if filtering_cond_name == 'Run' or filtering_cond_name == 'Rest' :
-        quantities += ['running']
-        data.build_running(verbose=False)
-        check_presence_locomotion_values(data)
+        if data.has_running():
+            quantities += ['running']
+            data.build_running(verbose=False)
+            check_presence_locomotion_values(data)
 
     return data, quantities
 
 
 def get_filtering_cond(filtering_cond_name, Episodes):
 
-    if filtering_cond_name == 'Run' : 
-        filtering_cond =  compute_arousal_mask(Episodes)[0]
+    if filtering_cond_name == None : 
+        filtering_cond = None
+    
+    elif filtering_cond_name == 'Run' : 
+        filtering_cond =  compute_arousal_masks(Episodes)[0]
 
     elif filtering_cond_name == 'Rest' : 
-        filtering_cond =  compute_arousal_mask(Episodes)[1]
+        filtering_cond =  compute_arousal_masks(Episodes)[1]
 
     return filtering_cond
 
 
 def check_presence_locomotion_values(data):
     if np.sum(data.running) == 0 : 
-        raise ValueError('No locomotion values present in the datafile')
-    
-def compute_arousal_mask(Episodes, speed_thr = 0.5) : 
+        raise ValueError('All locomotion values equal zero in this file')
+
+        
+def compute_arousal_masks(Episodes, speed_thr = 0.5) : 
 
     n_ep = len(Episodes.repeat)
     temporal_mask = (0 <= Episodes.t) & (Episodes.t <= Episodes.time_duration[0]) #only consider locomotion during the visual stimuli
@@ -76,10 +76,10 @@ def compute_arousal_mask(Episodes, speed_thr = 0.5) :
     return run_mask, rest_mask 
 
 
-def get_perc_rest_from_rest_summary(rest_summary, return_mean = True) :
+def get_perc_rest_from_rest_summary(rest_summaries, return_mean = True) :
 
-    n_trials = 15*8
-    sessions_perc_rest = [np.sum(r_s['ntrials'])/n_trials for r_s in rest_summary]
+    n_trials = 15*8 #hard coded for tuning and contrast protocol..
+    sessions_perc_rest = [np.sum(r_s['ntrials'])/n_trials for r_s in rest_summaries]
 
     if return_mean : 
         return np.round(np.nanmean(sessions_perc_rest),3)
@@ -116,6 +116,6 @@ def compute_perc_rest_from_nwb(folder, base_path, protocol = 'Tunings', compute 
 
         if compute == 'episodes' :
             #percentage of episodes considered runned
-            perc_rest.append(np.round((np.sum(compute_arousal_mask(Episodes, speed_thr = speed_thr)[0]) *100) / len(Episodes.repeat),2))
+            perc_rest.append(np.round((np.sum(compute_arousal_masks(Episodes, speed_thr = speed_thr)[0]) *100) / len(Episodes.repeat),2))
 
     return perc_rest

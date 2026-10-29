@@ -29,7 +29,7 @@ def draw_tuning_curve(Tunings,
                     color = None,
                     alpha = 1,
                     xy = (0,0),
-                    uncertainty_sy = 'sem',
+                    uncertainty_sy = 'std',
                     graph_width_dict = {'lw' : 2, 'ms' : 3, 'fontsize' : 7},
                     clip_negative = False) : 
     
@@ -60,11 +60,8 @@ def draw_tuning_curve(Tunings,
 
     ax.annotate(text = 'N= ' + str(n_cells), xy = xy, color = color, fontsize = fontsize, alpha = alpha)
 
-    if uncertainty_sy == 'sem': 
-        uncertainty_sy = sem(Responses, axis = 0)
-    elif uncertainty_sy == 'std' : 
-        if 'std-values' not in Tunings[0].keys(): 
-            print('no std values, uncertainty is not drawn')
+    if uncertainty_sy == 'std' : 
+        uncertainty_sy = np.std(Responses, axis = 0, nan_policy = 'omit')
     elif uncertainty_sy == 'propagation' : 
         print('not implemented')
         #uncertainty_sy = session_sem_with_indepedance_hypothesis_universal(Tunings)
@@ -75,7 +72,8 @@ def draw_tuning_curve(Tunings,
             alpha = alpha,
             elinewidth = 1,
             fmt = '.',
-            color=color, ms = ms)
+            color=color, 
+            ms = ms)
 
 
 
@@ -84,7 +82,7 @@ def draw_sensitivitie_curve(Sensitivities,
                             color = None,
                             alpha = 1,
                             xy = (0,0),
-                            uncertainty_sy = 'propagated',
+                            uncertainty_sy = 'std',
                             graph_width_dict = {'lw' : 2, 'ms' : 3, 'fontsize' : 4}
                             ):
 
@@ -98,6 +96,8 @@ def draw_sensitivitie_curve(Sensitivities,
 
     if uncertainty_sy == 'propagated' : 
         uncertainty_sy = session_sem_with_indepedance_hypothesis_universal(Sensitivities)
+    elif uncertainty_sy == 'std' : 
+        uncertainty_sy = np.std(Responses, axis = 0, nan_policy = 'omit')
 
     #draw
     lw = graph_width_dict['lw']
@@ -112,37 +112,34 @@ def draw_sensitivitie_curve(Sensitivities,
         ax=ax)
                 
     ax.annotate(text = 'N= ' + str(n_cells), xy = xy, color = color, alpha = alpha, fontsize = fontsize)
+
     
 def plot_responses(ax,
-                folders, 
+                summary_filenames,
                 colors,  
                 alphas = None,
                 summary_protocol = 'Tunings',
                 clip_negative = True,
                 special_dict = {}, 
-                summary_paths = ["/home/user/DATA/Astrid/Cibele_data/summary"],
                 sensitivitie_uncertainty = 'propagated') :
 
-    if type(folders) == str: 
-        folders = [folders]
-    summary_paths = correct_summary_form(summary_paths, folders)
-    summary_prefix_name, title, ylims = extract_special_dict(special_dict, folders)
+
+    title, ylims = extract_special_dict(special_dict)
     if alphas == None : 
-        alphas = [None for i in range(len(folders))]
+        alphas = [None for i in range(len(summary_filenames))]
     
 
-    for i,folder in enumerate(folders) : 
+    for i, summary_filename in enumerate(summary_filenames) : 
         
-        keys = get_folder_keys(folder, summary_protocol = summary_protocol)
+        keys = get_protocol_keys(summary_protocol = summary_protocol)
 
-        for j, key in enumerate(keys) :
-        
+        for j, key in enumerate(keys) : 
+            summaries = np.load(summary_filename + '%s.npy' % key, allow_pickle=True) 
+            
             if summary_protocol == 'Tunings' : 
 
-                Tunings = np.load(summary_paths[i] + '/' + summary_prefix_name[i] + 'Tunings_%s.npy' % key, allow_pickle=True) 
-
                 xy =  (100+(30*j),1-(0.03*i))
-                draw_tuning_curve(Tunings,
+                draw_tuning_curve(summaries,
                         ax = ax, 
                         color = colors[i][j],
                         alpha = alphas[i],
@@ -152,18 +149,16 @@ def plot_responses(ax,
 
 
             elif summary_protocol == 'Sensitivities' : 
-                
-                Sensitivities = np.load(summary_paths[i] + '/' + summary_prefix_name[i] + 'Sensitivities_%s.npy' % key, allow_pickle=True) 
 
                 xy = (0.05+(0.1*j),0.65-(0.04*i))
-                draw_sensitivitie_curve(Sensitivities,
+                draw_sensitivitie_curve(summaries,
                         ax = ax, 
                         color = colors[i][j],
                         alpha =  alphas[i],
                         xy = xy,
                         uncertainty_sy = sensitivitie_uncertainty,
                         graph_width_dict = {'lw' : 2, 'ms' : 3, 'fontsize' : 8})
-        
+
     add_axis_labels_to_plot(ax, plot_type = summary_protocol)
 
     ax.set_title(title, fontsize = 13)
@@ -213,24 +208,21 @@ def draw_responsiveness_pie(ax, summary, color, total_on = 'nROIs_final') :
 
 
 
-def plot_responsiveness_pies(axes, folders, colors, total_on = 'nROIs_final', special_dict = None, summary_protocol = 'Tunings', summary_paths = ["/home/user/DATA/Astrid/Cibele_data/summary"]):
-
-    summary_prefix_name = extract_special_dict(special_dict, folders)[0]
-    summary_paths = correct_summary_form(summary_paths, folders)
+def plot_responsiveness_pies(axes, summary_filenames, colors, total_on = 'nROIs_final', special_dict = None, summary_protocol = 'Tunings'):
 
     k = 0
-    for i,folder in enumerate(folders) : 
+    for i, summary_filename in enumerate(summary_filenames) : 
 
-        keys = get_folder_keys(folder, summary_protocol = summary_protocol)
+        keys = get_protocol_keys(summary_protocol = summary_protocol)
         
-        for j, key in enumerate(keys):
+        for key in keys:
 
-            summary = np.load(summary_paths[i] + '/'+ summary_prefix_name[i//2] + summary_protocol + '_' + key + '.npy', allow_pickle=True) 
+            summary = np.load(summary_filename + '%s.npy' % key, allow_pickle=True) 
             draw_responsiveness_pie(axes[k], summary, colors[i], total_on = total_on)
             k+=1
 
-        axes[k-2].set_title('half contrast', color = 'black', loc = 'left', fontsize = 10, pad = 35)
-        axes[k-1].set_title('full contrast', color = 'black', loc = 'left', fontsize = 10, pad = 35)
+        axes[k-2].set_title('full contrast', color = 'black', loc = 'left', fontsize = 10, pad = 35)
+        axes[k-1].set_title('half contrast', color = 'black', loc = 'left', fontsize = 10, pad = 35)
 
 
 
@@ -250,6 +242,7 @@ def get_fluorescence_level(nwb_filenames, dFoF_parameters, F_value = 'correctedF
     for filename in nwb_filenames : 
 
         data = physion.analysis.read_NWB.Data(filename, verbose=False) 
+        #getattr(data, 'build_' + F_value)
         data.build_dFoF(**dFoF_parameters, verbose=False)
 
         Fval.append(np.mean(getattr(data, F_value), axis = 1)) #one mean value per cell
@@ -259,9 +252,7 @@ def get_fluorescence_level(nwb_filenames, dFoF_parameters, F_value = 'correctedF
     return Fval
 
 
-def plot_mean_F_val(ax, folders, colors, F_value, summary_paths = ['/home/user/DATA/Astrid/summary'], summary_protocol = 'Tunings', special_dict = None) :
-
-    summary_paths = correct_summary_form(summary_paths, folders)
+def plot_mean_F_val(ax, folders, colors, F_value, summary_paths, summary_protocol = 'Tunings', special_dict = None) :
 
     x = np.arange(0,len(folders))
     y = []
@@ -271,7 +262,7 @@ def plot_mean_F_val(ax, folders, colors, F_value, summary_paths = ['/home/user/D
     for folder, summary_path in zip(folders, summary_paths) : 
         dFoF_parameters = get_dFoF_params(folder, None)
         dFoF_parameters['with_correctedFluo_and_F0'] = True
-        nwb_filenames = get_nwb_filenames_from_summary(folder, summary_path, summary_protocol, special_dict)
+        nwb_filenames = get_nwb_filenames_from_summary(folder, summary_path, summary_protocol)
 
         Fval = get_fluorescence_level(nwb_filenames, dFoF_parameters = dFoF_parameters, F_value = F_value)
         y.append(np.mean(Fval))
@@ -304,7 +295,7 @@ def add_axis_labels_to_plot(ax, plot_type = 'Tunings', fontsize = 13):
         ax.set_xlabel('contrast', fontsize = fontsize)
 
           
-def add_legend_to_plot(ax, labels, colors, loc = 'lower left', bbox_to_anchor = None) :  #ax can be fig 
+def add_legend_to_plot(ax, labels, colors, loc = 'lower left', bbox_to_anchor = None, fontsize = 10) :  #ax can be fig 
 
     if len(colors[0]) == 2 and len(colors) == len(labels) : #include lightgrey control cond in legend
         labels = np.concatenate([[label]*2 for label in labels]).tolist()
@@ -315,6 +306,6 @@ def add_legend_to_plot(ax, labels, colors, loc = 'lower left', bbox_to_anchor = 
         patch = mpatches.Patch(color=colors[i], label=label)
         handles.append(patch)
 
-    ax.legend(handles = handles, labels = labels, loc = loc, bbox_to_anchor = bbox_to_anchor)
+    ax.legend(handles = handles, labels = labels, loc = loc, bbox_to_anchor = bbox_to_anchor, fontsize = fontsize)
 
 

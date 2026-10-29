@@ -19,24 +19,23 @@ from dataset_tools import (get_summary_prefix_name,
                                     build_filtering_cond_quantities)
 from tuning_dataset_tools import *
 
-
 parallelized, debug = False, False 
 
 # load the dataset locations:
-from Dataset_Organization import datasets_func, quantity, summary_folder, filtering_cond_name
+from Dataset_Organization import datasets_func, quantity, summary_folder, filtering_cond_name, keep_all_orientations_significances
 datasets = datasets_func('contrast', [0.5, 1.0])
 
 if filtering_cond_name is not None : 
     from tuning_dataset_tools import (get_prefered_angles_dataset,
                                         get_prefered_angles)
 
-
 from Preprocessing_Settings import get_dFoF_params, get_stat_test_props
 
-special_dFoF_params = sys.argv 
-if special_dFoF_params == ['Tuning-Dataset.py']:
-    special_dFoF_params = None
 
+if sys.argv == ['Tuning-Dataset.py']:
+    special_dFoF_params = None
+else : 
+    special_dFoF_params = sys.argv 
 # %%
 def process_file(filename, i, c, quantity, filtering_cond_name):
     # to be a valid datafile:
@@ -44,7 +43,6 @@ def process_file(filename, i, c, quantity, filtering_cond_name):
 
     # CELL type-dependent calcium pre-processing params 
     dFoF_parameters = get_dFoF_params(c, special_dFoF_params)
-
     # CELL type-dependent statistical test for visually-evoked-responses
     stat_test_props= get_stat_test_props(c)
 
@@ -53,12 +51,16 @@ def process_file(filename, i, c, quantity, filtering_cond_name):
     print('%i) ' % (i+1), 'analyzing file: %s  [...] ' % filename)
     data = Data(filename, verbose=False)
     protocol_name=[p for p in data.protocols if '8orientation' in p][0]
-    data.build_dFoF(**dFoF_parameters, verbose=False)
 
-    if quantity[:11] == 'Deconvolved':
-        #setattr(data, quantity, data.correctedFluo - data.correctedFluo0)
-        data.build_Deconvolved(Tau = 1.5, quantity = quantity[12:])
-        stat_test_props['interval_post']=[0.0, 1.0]                                  
+    data.build_dFoF(**dFoF_parameters, verbose=False)
+    
+    if quantity[:6] == 'Zscore' :
+        data.build_Zscore(quantity[7:])
+
+    elif quantity[:11] == 'Deconvolved':
+        data.build_Deconvolved(Tau = 0.8, quantity = quantity[12:])
+        stat_test_props['interval_post']=[0.0, 1.0]  
+        quantity = quantity[:11]             
 
     quantities = [quantity]
 
@@ -68,24 +70,14 @@ def process_file(filename, i, c, quantity, filtering_cond_name):
             
             if filtering_cond_name :
                 data, quantities = build_filtering_cond_quantities(filtering_cond_name, data, quantities)
-        
+                prefered_angles = get_prefered_angles(prefered_angles_dataset, filename)
+
             Episodes = EpisodeData(data, 
                                     quantities=quantities,
                                     protocol_name=protocol_name, 
                                     verbose=debug)
             
-            if filtering_cond_name:
-                filtering_cond = get_filtering_cond(filtering_cond_name, Episodes)
-                prefered_angles = get_prefered_angles(prefered_angles_dataset, filename)
-
-            else: 
-                filtering_cond = None
-                prefered_angles = None
-
-            if stat_test_props['sign'] == 'both' : 
-                plot_orientations_significances = True 
-            else : 
-                plot_orientations_significances = False 
+            filtering_cond = get_filtering_cond(filtering_cond_name, Episodes)
 
             Tuning = compute_tuning_response_per_cells(data, Episodes, 
                                                         quantity=quantity, 
@@ -97,7 +89,7 @@ def process_file(filename, i, c, quantity, filtering_cond_name):
                                                         contrast =\
                                                             float(c.split('contrast-')[1][:3]),
                                                         nMin_episodes = 2,
-                                                        plot_orientations_significances = plot_orientations_significances, 
+                                                        keep_all_orientations_significances = keep_all_orientations_significances, 
                                                         verbose=debug)
             Tuning['datafile'] = filename
             Tuning['nROIs_original'] = data.original_nROIs
@@ -105,7 +97,7 @@ def process_file(filename, i, c, quantity, filtering_cond_name):
             Tuning['nROIs_responsive'] = np.sum(Tuning['significant_ROIs'])
             Tuning['subject'] = data.nwbfile.subject.subject_id
 
-            if dFoF_parameters['roi_specific_neuropil_correction_factor'] : 
+            if  dFoF_parameters['with_computed_neuropil_fact'] : #dFoF_parameters['roi_specific_neuropil_correction_factor'] or dFoF_parameters['with_computed_neuropil_fact'] : 
                 Tuning['neuropil_correction_factors'] = np.concatenate(data.neuropil_correction_factor)
 
             np.save(os.path.join(summary_folder, 'temp', 
@@ -146,8 +138,6 @@ if __name__=='__main__':
     for n in range(Nstart, Nend):
 
         c = list(datasets.keys())[n]
-        if filtering_cond_name:
-            prefered_angles_dataset = get_prefered_angles_dataset(datasets[c]['datafolder'], summary_folder, c.split('_contrast-')[1])
 
         table = datasets[c]['datafolder'].replace('NWBs', 'DataTable.xlsx')
 
@@ -162,6 +152,9 @@ if __name__=='__main__':
         print()
 
         DATASET = scan_folder_for_NWBfiles(datasets[c]['datafolder'])
+        
+        if filtering_cond_name:
+            prefered_angles_dataset = get_prefered_angles_dataset(datasets[c]['datafolder'], summary_folder, c.split('_contrast-')[1])
 
         #   FILTER:
         # ----------
@@ -219,8 +212,7 @@ if __name__=='__main__':
                     Tunings.append(Tuning)
 
             # # saving data
-            dFoF_parameters = get_dFoF_params(c, special_dFoF_params)
-            summary_prefix_name = get_summary_prefix_name(quantity, filtering_cond_name, dFoF_parameters, special_dFoF_params)
+            summary_prefix_name = get_summary_prefix_name(quantity, filtering_cond_name, special_dFoF_params)
 
             np.save(os.path.join(summary_folder, summary_prefix_name + 'Tunings_%s.npy' % c), Tunings)
 

@@ -78,26 +78,11 @@ def get_multiple_corrfact_axes_and_implement_mosaic(folders, fig):
 
     return axes
 
-def get_input_multiple_corrfact_plot(folder, colors, summary_path, neuropil_correction_factors = [0,0.15,0.3,0.55,0.7,0.85,1], inclufact = '1.15', prefixe = ''): 
+def get_multiple_corfact_colors_and_alphas(colors, neuropil_correction_factors = [0,0.15,0.3,0.55,0.7,0.85,1]): 
 
-    summary_prefixe_names, alphas = get_multiple_corrfact_summary_prefixes_and_alphas(neuropil_correction_factors = neuropil_correction_factors, inclufact = inclufact, prefixe = prefixe)
+    N = len(neuropil_correction_factors)
+    alphas = [0.1 + i*(0.9/(N -1)) for i in range(N)]
+    colors = [colors]*N
 
-    special_dict = {'summary_prefixe_name' : summary_prefixe_names, 'ylims': [0,1.05]}
-
-    folders = [folder]*len(neuropil_correction_factors)
-    colors = [colors]*len(neuropil_correction_factors)
-    summary_paths = [summary_path]*len(neuropil_correction_factors)
-
-    return folders, colors, summary_paths, alphas, special_dict
-
-
-def get_multiple_corrfact_summary_prefixes_and_alphas(neuropil_correction_factors = [0,0.15,0.3,0.55,0.7,0.85,1], inclufact = '1.15', prefixe = ''): 
-
-    summary_prefixe_names = []
-    alphas = []
-    for j, neuropil_correction_factor in enumerate(neuropil_correction_factors) :
-        summary_prefixe_names.append(prefixe + 'roi_to_neuropil_fluo_inclusion_factor_' +inclufact+ '_neuropil_correction_factor_' + str(neuropil_correction_factor) + '_')
-        alphas.append(0.1 + j*(0.9/(len(neuropil_correction_factors) -1)))
-
-    return summary_prefixe_names, alphas
+    return colors, alphas
 

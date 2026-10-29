@@ -1,13 +1,13 @@
-    
-def get_dFoF_params(dataset, special_dFoF_params):
+def get_dFoF_params(dataset, special_dFoF_params = None):
 
     dFoF_parameters = dict(\
                 roi_to_neuropil_fluo_inclusion_factor=1.15, # no factor here
                 neuropil_correction_factor = 0.7,
-                roi_specific_neuropil_correction_factor = False,
+                #roi_specific_neuropil_correction_factor = False,
                 method_for_F0 = 'sliding_percentile',
                 percentile=5., # percent
                 sliding_window = 5*60, # seconds
+                with_computed_neuropil_fact = False, 
         )
     
     if dataset[:4]=='PYR-':
@@ -23,12 +23,12 @@ def get_dFoF_params(dataset, special_dFoF_params):
 def get_stat_test_props(dataset): 
 
     stat_test_props=dict(interval_pre=[-1.,0],
-                        interval_post= [1.,2.],                                   
+                        interval_post= [0.,1.],                                   
                         test='ttest',                                            
                         sign='positive')
 
-    if  dataset[:4]=='PYR-' or  dataset[:3]=='PV-' : 
-        stat_test_props['interval_post'] = [0,1.]
+    if dataset[:4]=='SST-' : 
+        stat_test_props['interval_post'] = [1.,2.]
 
     return stat_test_props
 

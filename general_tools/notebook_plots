@@ -1,0 +1,261 @@
+#%%
+import numpy as np
+import sys, os 
+os.chdir('/home/user/lab-notebook/astrid')
+sys.path.insert(0,'/home/user/lab-notebook/astrid')
+from general_tools.plot_general_tools import *
+from general_tools.cell_type_color_codes import *
+from create_summaries.Preprocessing_Settings import get_dFoF_params
+from notebooks.gOSI import *
+from scipy.stats import sem
+
+
+#%%
+summary_paths, folders, colors= get_working_data_defaults(experimenters = ['Cibele'],
+                                                        folders_surnames = ['SST_WT', 'SST_WT_P15', 'SST_WT_P20', 'SST_WT_P24'], 
+                                                        color_with_grey=True)
+
+#%% COMPOSED TEMPLATE profil response 1 pop
+summary_protocol = 'Tunings' #'Sensitivities' 
+
+mosaic = """
+    AAAAAABBD
+    AAAAAABBD
+    AAAAAACCD
+    AAAAAACCD
+    """
+
+fig = plt.figure(layout="constrained", figsize = (10,7))
+fig.get_layout_engine().set(wspace = 0.2)
+for i, folder in enumerate(folders) : 
+    fig.text(x= 0, y= -0.05-0.03*i, s = '%s' % folder, color = colors[i][0], fontsize = 17)
+
+ax_dict = fig.subplot_mosaic(mosaic)
+
+summary_filenames = get_summary_names(folders, summary_paths, summary_protocols = [summary_protocol])
+#plot tuning resp
+plot_responses(ax_dict["A"],
+            summary_filenames, 
+            colors,  
+            summary_protocol = summary_protocol,
+            ) 
+
+#plot resp to visual pies
+colors = reshape_colors_with(colors)
+summary_filenames = get_summary_names(folders, summary_paths, summary_protocols = 'Tunings')
+plot_responsiveness_pies([ax_dict["B"], ax_dict["C"]], summary_filenames, colors, summary_protocol = summary_protocol, total_on = 'nROIs_final')
+
+#plot raw fluorescence amplitude
+plot_mean_F_val(ax_dict['D'], folders, colors, 'correctedFluo0', summary_paths = summary_paths,  summary_protocol = summary_protocol)
+
+
+
+#%% COMPOSED TEMPLATE multiple tuning curves with responsivenss and gosi comparaison
+summary_paths, folders, colors_without_grey = get_working_data_defaults(experimenters = ['Cibele'],
+                                                        folders_surnames = ['SST_WT_P15', 'SST_WT_P20', 'SST_WT_P24','SST_WT'])
+
+summary_paths, folders, colors_without_grey = get_working_data_defaults(experimenters = ['Cibele'],
+                                                        folders_surnames = ['PV_WT_P20', 'PV_WT_P24','PV_WT'])
+
+clip_negative = True
+summary_filenames = get_summary_names(folders, summary_paths, summary_prefixe_names = [''], summary_protocols = 'Tunings')
+#summary_filenames = [text[:43] + 'roi_to_neuropil_fluo_inclusion_factor_1.15_neuropil_correction_factor_1_' + text[43:] for text in summary_filenames]
+mosaic = """
+    AABBCCDD
+    AABBCCDD
+    AABBCCDD
+    hhhhhhhh
+    IJMNEEFF
+    KLOPEEFF
+    iiiiEEFF
+    """
+
+
+mosaic = """
+    AAAAABBBBBCCCCCDDDDD
+    AAAAABBBBBCCCCCDDDDD
+    AAAAABBBBBCCCCCDDDDD
+    AAAAABBBBBCCCCCDDDDD
+    IIJJiiiiEEEEEjjFFFFF
+    KKLLiiiiEEEEEjjFFFFF
+    MMNNiiiiEEEEEjjFFFFF
+    OOPPiiiiEEEEEjjFFFFF
+
+    """
+
+
+
+
+fig= plt.figure(layout="constrained", figsize = (25,18))
+fig.get_layout_engine().set()
+ax_dict = fig.subplot_mosaic(mosaic)
+#ax_dict["h"].axis("off")
+for letter in ['A','i','j','O','P']:
+    ax_dict[letter].axis("off")
+
+
+#plot resp to visual pies
+plot_responsiveness_pies([ax_dict["I"], ax_dict["J"], ax_dict["K"], ax_dict["L"], ax_dict["M"], ax_dict["N"], ax_dict["O"], ax_dict["P"]], 
+                         summary_filenames, colors_without_grey, summary_protocol = 'Tunings', total_on = 'nROIs_final')
+
+colors = reshape_colors_with(colors_without_grey, second_cond_grey=True)
+#colors = reshape_colors_with(colors, second_cond_low_alpha = True, second_cond_alpha=0.3)
+for folder, summary_filename, color, letter in zip(folders,
+                                                summary_filenames, 
+                                                colors,
+                                                ['B','C','D']) : 
+
+    plot_responses(ax_dict[letter],
+                    [summary_filename], 
+                    [color],  
+                    summary_protocol = 'Tunings',
+                    clip_negative = clip_negative,
+                    special_dict = {'ylims' : [0,1.05]})
+    ax_dict[letter].grid(True, linewidth = 1, axis = 'y')
+    
+colors = np.concatenate(reshape_colors_with(colors, second_cond_low_alpha = True, second_cond_alpha=0.3))
+summary_filenames = get_summary_names(folders, summary_paths, summary_protocols = 'Tunings', add_keys = True)
+
+for letter, osi_type in zip(['E','F'], ['OSI','gOSI']):
+
+    x = [0,1,3,4,6,7,9,10]
+    x = [0,1,3,4,6,7]
+    plot_OSI_or_gOSI(ax_dict[letter], 
+                     summary_filenames, 
+                     colors, 
+                     osi_type = osi_type, 
+                     labels = None, 
+                     x = x, 
+                     mean_by = 'sessions', 
+                     clip_negative = clip_negative)
+
+add_legend_to_plot(ax_dict["i"], folders, colors_without_grey, loc = 'lower left', fontsize = 15) 
+
+if clip_negative : 
+    ax_dict["i"].annotate(text = 'negative clipped', xy = (0,1), fontsize = 25)
+    #ax_dict["i"].annotate(text = 'correction factor =1', xy = (0,0.8), fontsize = 25)
+
+
+
+#%%
+
+summary_paths, folders, colors_without_grey = get_working_data_defaults(experimenters = ['Cibele'],
+                                                        folders_surnames = ['SST_WT', 'PV_WT'])
+
+colors = reshape_colors_with(colors_without_grey, second_cond_grey=True)
+summary_filenames = get_summary_names(folders, summary_paths, summary_protocols = 'Tunings', template = ['','Deconvolved_dFoF'])
+
+mosaic = """
+    AABBCCDD
+    AABBCCDD
+    hhhhEEFF
+    hhhhEEFF
+    """
+
+fig= plt.figure(layout="constrained", figsize = (20,10))
+fig.get_layout_engine().set(wspace = 0.2, hspace = 0.2)
+ax_dict = fig.subplot_mosaic(mosaic)
+ax_dict["h"].axis("off")
+
+
+for folder, summary_filename, color, letter in zip(folders,
+                                                summary_filenames, 
+                                                colors,
+                                                ['A','B','C','D']) : 
+
+    plot_responses(ax_dict[letter],
+                    [summary_filename], 
+                    [color],  
+                    summary_protocol = 'Tunings',
+                    clip_negative = True,
+                    special_dict = {'ylims' : [0,1.05]})
+    ax_dict[letter].grid(True, linewidth = 1, axis = 'y')
+#%% plot DECONVOLVED WITH GOSI
+
+summary_paths, folders, colors= get_working_data_defaults(experimenters = ['Cibele'],
+                                                        folders_surnames = ['PYR_WT'],
+                                                        color_with_grey=True)
+colors = np.concatenate(reshape_colors_with(colors, second_cond_low_alpha = True, second_cond_alpha=0.3))
+mosaic = """
+    AAAABB
+    AAAABB
+    AAAABB
+    cccccc
+    """
+fig= plt.figure(layout="constrained", figsize = (10,7))
+fig.get_layout_engine().set(wspace = 0.15)
+ax_dict = fig.subplot_mosaic(mosaic)
+
+summary_filenames = get_summary_names(folders, summary_paths, summary_protocols = 'Tunings', template = ['','Deconvolved_dFoF'])
+
+colors = [[(*to_rgb('black'),1),(*to_rgb('grey'),1)], colors]
+
+plot_responses(ax_dict['A'],
+                summary_filenames,
+                colors,  
+                summary_protocol = 'Tunings',
+                clip_negative = True,
+                special_dict = {'ylims' : [0,1.05]})
+
+x = [0,1,3,4]
+colors = np.concatenate(colors)
+summary_filenames = get_summary_names(folders, summary_paths, summary_protocols = 'Tunings', template = ['','Deconvolved_dFoF'], add_keys = True)
+
+plot_OSI_or_gOSI(ax_dict['B'], summary_filenames, colors, osi_type = 'gOSI', labels = None, x = x, mean_by = 'sessions')
+ax_dict['B'].set_xticks(ticks = [0.5,3.5], labels = ['Deconvolved',''])
+
+labels = [summary_filename.split('/')[-1][:-4] for summary_filename in summary_filenames]
+ax_dict["c"].axis("off")
+add_legend_to_plot(ax_dict["c"], labels, colors, loc = 'center left', fontsize = 12) 
+
+
+#%%% 
+
+summary_paths, folders, colors= get_working_data_defaults(experimenters = ['Cibele'],
+                                                        folders_surnames = ['SST_WT_P15', 'SST_WT_P20', 'SST_WT_P24','SST_WT'],
+                                                        color_with_grey=True)
+summary_paths, folders, colors= get_working_data_defaults(experimenters = ['Cibele'],
+                                                        folders_surnames = ['PV_WT_P20', 'PV_WT_P24','PV_WT'],
+                                                        color_with_grey=True)
+
+mosaic = """
+    ABC
+    DEF
+    IJK
+    """
+
+fig= plt.figure(layout="constrained", figsize = (17,25))
+fig.get_layout_engine().set(wspace = 0.15, hspace = 0.2)
+ax_dict = fig.subplot_mosaic(mosaic)
+
+colors = reshape_colors_with(colors, second_cond_low_alpha = True, second_cond_alpha=0.3)
+summary_filenames = get_summary_names(folders, summary_paths, summary_protocols = 'Tunings', template =['','inclufact_2_3'])
+
+for i, letter in enumerate(list(ax_dict.keys())) : 
+
+    plot_responses(ax_dict[letter],
+                    [summary_filenames[i]],
+                    [colors[i//3]],  
+                    summary_protocol = 'Tunings',
+                    clip_negative = True,
+                    special_dict = {'ylims' : [0,1.05]})
+    if 'factor' in summary_filenames[i] : 
+        ax_dict[letter].set_title(summary_filenames[i].split('/')[-1][:39])
+
+plt.show()
+
+mosaic = """
+    O
+    P
+    Q
+    """
+fig= plt.figure(layout="constrained", figsize = (5,25))
+fig.get_layout_engine().set(wspace = 0.15, hspace = 0.2)
+ax_dict = fig.subplot_mosaic(mosaic)
+summary_filenames = get_summary_names(folders, summary_paths, summary_protocols = 'Tunings', template =['','inclufact_2_3'], add_keys = True)
+
+for j in range(0,len(summary_filenames),6) : 
+    letter = list(ax_dict.keys())[j//6]
+    x = [0,1,3,4,6,7]
+    plot_OSI_or_gOSI(ax_dict[letter], summary_filenames[j:j+6], colors[j//6], osi_type = 'gOSI', labels = None, x = x, mean_by = 'sessions')
+    ax_dict[letter].set_ylim(0,0.40)

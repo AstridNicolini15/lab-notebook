@@ -1,6 +1,6 @@
 #%% Tools necessary to create Tuning summaries with arousal cond, neuropil cond etc.
 
-import os, sys , shutil 
+import os, sys 
 import numpy as np
 import pandas as pd 
 
