@@ -3,17 +3,10 @@ import numpy as np
 import os, sys 
 os.chdir('/home/user/lab-notebook/astrid')
 sys.path.insert(0,'/home/user/lab-notebook/astrid/physion/src')
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
+
 from matplotlib.colors import to_rgb
 import pandas as pd 
 import physion.utils.plot_tools as pt
-
-#%%
-if False : 
-    summary_path, folders, colors = get_working_data_defaults(experimenter = 'Taddy',
-                                                            folders_surnames = ['SST_WT', 'SST_GluN1_KO'],
-                                                            color_with_grey = False)
 
 #%%
 

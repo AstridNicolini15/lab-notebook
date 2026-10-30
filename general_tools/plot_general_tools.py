@@ -29,7 +29,7 @@ def draw_tuning_curve(Tunings,
                     color = None,
                     alpha = 1,
                     xy = (0,0),
-                    uncertainty_sy = 'std',
+                    uncertainty_sy = 'sem',
                     graph_width_dict = {'lw' : 2, 'ms' : 3, 'fontsize' : 7},
                     clip_negative = False) : 
     
@@ -61,7 +61,9 @@ def draw_tuning_curve(Tunings,
     ax.annotate(text = 'N= ' + str(n_cells), xy = xy, color = color, fontsize = fontsize, alpha = alpha)
 
     if uncertainty_sy == 'std' : 
-        uncertainty_sy = np.std(Responses, axis = 0, nan_policy = 'omit')
+        uncertainty_sy = np.nanstd(Responses, axis = 0)
+    elif uncertainty_sy == 'sem' : 
+        uncertainty_sy = sem(Responses, axis = 0, nan_policy = 'omit')
     elif uncertainty_sy == 'propagation' : 
         print('not implemented')
         #uncertainty_sy = session_sem_with_indepedance_hypothesis_universal(Tunings)
@@ -97,7 +99,7 @@ def draw_sensitivitie_curve(Sensitivities,
     if uncertainty_sy == 'propagated' : 
         uncertainty_sy = session_sem_with_indepedance_hypothesis_universal(Sensitivities)
     elif uncertainty_sy == 'std' : 
-        uncertainty_sy = np.std(Responses, axis = 0, nan_policy = 'omit')
+        uncertainty_sy = np.std(Responses, axis = 0)
 
     #draw
     lw = graph_width_dict['lw']
@@ -120,11 +122,11 @@ def plot_responses(ax,
                 alphas = None,
                 summary_protocol = 'Tunings',
                 clip_negative = True,
-                special_dict = {}, 
-                sensitivitie_uncertainty = 'propagated') :
+                sensitivitie_uncertainty = 'propagated',
+                grid = False,
+                title = '',
+                ylims = [0,1.05]) :
 
-
-    title, ylims = extract_special_dict(special_dict)
     if alphas == None : 
         alphas = [None for i in range(len(summary_filenames))]
     
@@ -163,6 +165,9 @@ def plot_responses(ax,
 
     ax.set_title(title, fontsize = 13)
     ax.set_ylim(ylims)
+    
+    if grid == True : 
+        ax.grid(True, linewidth = 1, axis = 'y')
 
 #%%
 #---------RESPONSIVENESS TO VISUAL STIM----------#
@@ -215,14 +220,14 @@ def plot_responsiveness_pies(axes, summary_filenames, colors, total_on = 'nROIs_
 
         keys = get_protocol_keys(summary_protocol = summary_protocol)
         
-        for key in keys:
+        for j, key in enumerate(keys):
 
             summary = np.load(summary_filename + '%s.npy' % key, allow_pickle=True) 
-            draw_responsiveness_pie(axes[k], summary, colors[i], total_on = total_on)
+            draw_responsiveness_pie(axes[k], summary, colors[i][j], total_on = total_on)
             k+=1
 
-        axes[k-2].set_title('full contrast', color = 'black', loc = 'left', fontsize = 10, pad = 35)
-        axes[k-1].set_title('half contrast', color = 'black', loc = 'left', fontsize = 10, pad = 35)
+        #axes[k-2].set_xlabel('full contrast', color = 'black', loc = 'left', fontsize = 10)
+        #axes[k-1].set_xlabel('half contrast', color = 'black', loc = 'left', fontsize = 10)
 
 
 

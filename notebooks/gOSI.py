@@ -17,6 +17,7 @@ from scipy.stats import wilcoxon, sem
 
 from matplotlib.transforms import Bbox
 import matplotlib.pyplot as plt
+from general_tools.general_tools import get_protocol_keys
 #from matplotlib.colors import to_rgb
 #import physion.utils.plot_tools as pt
 
@@ -59,25 +60,31 @@ def get_OSIs_or_gOSIs(Tunings, osi_type = 'gOSI', only_significant = True, clip_
     return OSIs
 
 
-def plot_OSI_or_gOSI(ax, summary_filenames, colors, osi_type = 'gOSI', labels = None, x = None, mean_by = 'sessions', clip_negative = True): #with mean and std 
+def plot_OSI_or_gOSI(ax, summary_filenames, colors, osi_type = 'gOSI', labels = None, x = None, mean_by = 'sessions', clip_negative = True, add_keys = True): 
 
     height = []
     height_error = []
     for filename in summary_filenames : 
-        Tunings = np.load(filename, allow_pickle = True)
+        if add_keys : 
+            keys = [key + '.npy' for key in get_protocol_keys(summary_protocol = 'Tunings')]
+        else : 
+            keys = ['']
+            
+        for key in keys : 
+            Tunings = np.load(filename + key, allow_pickle = True)
 
-        OSIs = get_OSIs_or_gOSIs(Tunings, osi_type = osi_type, clip_negative = clip_negative)
+            OSIs = get_OSIs_or_gOSIs(Tunings, osi_type = osi_type, clip_negative = clip_negative)
 
-        if mean_by == 'cells': 
-            OSIs = np.concatenate(OSIs)
-            height.append(np.nanmean(OSIs))
-            height_error.append(np.nanstd(OSIs))
-            ax.set_title('mean by cells')
+            if mean_by == 'cells': 
+                OSIs = np.concatenate(OSIs)
+                height.append(np.nanmean(OSIs))
+                height_error.append(np.nanstd(OSIs))
+                ax.set_title('mean by cells')
 
-        elif mean_by == 'sessions':
-            OSIs = [np.mean(session_gosi) for session_gosi in OSIs]
-            height.append(np.nanmean(OSIs))
-            height_error.append(sem(OSIs, nan_policy = 'omit'))
+            elif mean_by == 'sessions':
+                OSIs = [np.mean(session_gosi) for session_gosi in OSIs]
+                height.append(np.nanmean(OSIs))
+                height_error.append(sem(OSIs, nan_policy = 'omit'))
 
     if x is None : 
         x = np.arange(len(height))

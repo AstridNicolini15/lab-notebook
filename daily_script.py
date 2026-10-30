@@ -87,44 +87,27 @@ for T in Tunings :
 
 
 #%%
-from Dataset_Organization import datasets_func
-datasets = datasets_func('contrast', [0.5, 1.0])
-special_dict = {'ylims' : [0,1.05]}
-special_dict['summary_prefixe_names'] = [key[:-12] for key in list(datasets.keys())]
 
-summary_paths, folders, colors= get_working_data_defaults(experimenters = ['Cibele'],
-                                                        folders_surnames = ['SST_WT']*4, 
-                                                        color_with_grey=True)
+stat_test_props = dict(interval_pre=[-1.,0],                                   
+                       interval_post=[1.,2.],                                   
+                       test='ttest',                                            
+                       sign='positive')
 
-mosaic = """
-    AABBCCDDEEh
-    AABBCCDDEEh
-    """
+response_significance_threshold = 0.001 # very very conservative
 
-fig= plt.figure(layout="constrained", figsize = (30,6))
-fig.get_layout_engine().set(wspace = 0.15, hspace = 0.2)
-ax_dict = fig.subplot_mosaic(mosaic)
-ax_dict["h"].axis("off")
+# possibility to **FILTER THE EPISODES**:
+# stim_cond = (Episodes.t>0) & (Episodes.t<Episodes.time_duration[0])
+# filtering_cond = Episodes.running[:,stim_cond].mean(axis=1)<0.1
 
+Tuning = compute_tuning_response_per_cells(data, Episodes,
+                                        #    filtering_cond=filtering_cond,
+                                           quantity='dFoF',
+                                           stat_test_props=stat_test_props,
+                                           response_significance_threshold = response_significance_threshold,
+                                           contrast=1,
+                                           verbose=True)
 
-#colors = reshape_colors_with(colors, second_cond_low_alpha = True, second_cond_alpha=0.3)
-for folder, summary_path, color, letter in zip(folders,
-                                                summary_paths, 
-                                                colors,
-                                                ['A','B','C']) : 
-
-
-
-        plot_responses(ax_dict[letter],
-                        [folder], 
-                        [color],  
-                        summary_protocol = 'Tunings',
-                        clip_negative = False,
-                        special_dict = special_dict, 
-                        summary_paths = [summary_path])
 #%%
-
-
 
 summary_filenames = get_summary_names(folders, summary_paths, summary_protocols = 'Tunings')
 

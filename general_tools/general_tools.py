@@ -5,20 +5,6 @@ import numpy as np
 import itertools
 from create_summaries.Preprocessing_Settings import get_dFoF_params
 
-def extract_special_dict(special_dict): 
-
-    corrected_special_dict = { 'title' : '', 'ylims' : None}
-
-    if special_dict is not None :
-        for key in special_dict.keys() :
-            corrected_special_dict[key] = special_dict[key]
-
-    title = corrected_special_dict['title']
-    ylims = corrected_special_dict['ylims']
-    
-    return title, ylims
-
-
 def get_protocol_keys(summary_protocol = 'Tunings') : 
 
     if summary_protocol == 'Tunings' : 
@@ -42,7 +28,7 @@ def get_nwb_filenames_from_summary(folder, summary_path, summary_protocol):
     return nwb_filenames
 
 
-def get_summary_names(folders, summary_paths, summary_protocols, summary_prefixe_names = [''], summary_sufixe_names = [''], template = [], add_keys = False): 
+def get_summary_names(folders, summary_paths, summary_protocols, summary_prefixe_names = None, summary_sufixe_names = None, template = [], add_keys = False): 
 
     def input_form_check(input, ref = [1]): 
         if type(input) == str:
@@ -54,12 +40,16 @@ def get_summary_names(folders, summary_paths, summary_protocols, summary_prefixe
     folders = input_form_check(folders)
     summary_protocols = input_form_check(summary_protocols, folders)
     summary_paths = input_form_check(summary_paths, folders)
+    summary_prefixe_names = input_form_check(summary_prefixe_names)
+    summary_sufixe_names = input_form_check(summary_sufixe_names)
+    
+    if summary_prefixe_names == None : 
+        summary_prefixe_names = []
+    if summary_sufixe_names == None : 
+        summary_sufixe_names = []
 
     summary_filenames = []
-
-    for i,folder in enumerate(folders) : 
-        summary_prefixe_names = ['']
-        summary_sufixe_names = ['']
+    for i,folder in enumerate(folders) :
 
         for item in template : 
 
@@ -70,20 +60,18 @@ def get_summary_names(folders, summary_paths, summary_protocols, summary_prefixe
             
             if item == 'inclufact_2_3' : 
                 #default_inclufact = get_dFoF_params(folder, None)['roi_to_neuropil_fluo_inclusion_factor']
+                summary_prefixe_names.append('')
                 for inclufact in [2, 3]:
                     summary_prefixe_names.append('roi_to_neuropil_fluo_inclusion_factor_' + str(inclufact) + '_neuropil_correction_factor_0.7_') 
-
-            if item == '' and type(template) == list: 
-                summary_prefixe_names.append('')
 
             if item == 'young' : 
                 for interval in (15,19), (20,23), (24,27) : 
                         summary_sufixe_names.append('_P%i-P%i_' % interval)
 
-        if summary_prefixe_names[0] == '' and len(summary_prefixe_names) > 1 : 
-            del summary_prefixe_names[0]
-        if summary_sufixe_names[0] == '' and len(summary_sufixe_names) > 1 : 
-            del summary_sufixe_names[0]
+        if not summary_prefixe_names : 
+            summary_prefixe_names = ['']
+        if not summary_sufixe_names : 
+            summary_sufixe_names = ['']
 
         for summary_prefixe_name, summary_sufixe_name in list(itertools.product(summary_prefixe_names,summary_sufixe_names)) :
 
@@ -97,3 +85,4 @@ def get_summary_names(folders, summary_paths, summary_protocols, summary_prefixe
                     summary_filenames.append(summary_name)
 
     return summary_filenames
+
