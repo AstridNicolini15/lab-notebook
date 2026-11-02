@@ -1,13 +1,9 @@
-#%%
-import os, sys
 import numpy as np  
-os.chdir('/home/user/lab-notebook/astrid')
-
 import matplotlib as matplotlib
 import matplotlib.colors as mcolors
 import string
 
-#%% coherence between all can be better : ie moins redondant 
+#coherence between all can be better : ie moins redondant 
 
 def plot_corrfact_legend_color_maps(colors, fig, axes, neuropil_correction_factors =  [0,0.15,0.3,0.55,0.7,0.85,1]) :
 

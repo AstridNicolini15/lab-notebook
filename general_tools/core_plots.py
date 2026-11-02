@@ -1,15 +1,18 @@
 #%%
-import numpy as np
 import sys, os 
 os.chdir('/home/user/lab-notebook/astrid')
 sys.path.insert(0,'/home/user/lab-notebook/astrid')
-from general_tools.plot_general_tools import *
-from general_tools.cell_type_color_codes import *
-from create_summaries.Preprocessing_Settings import get_dFoF_params
+sys.path.insert(0,'/home/user/lab-notebook/astrid/physion/src')
+
+import numpy as np
 import string
 alphabet_upper = list(string.ascii_uppercase)
 
-#%% CORE PLOTS TEMPLATES : also working with populations comparaisons
+from general_tools.general_plot_tools import *
+from general_tools.cell_type_color_codes import *
+from notebooks.gOSI import *
+from notebooks.arousal import *
+#%% CORE PLOTS TEMPLATES : works also with populations comparaisons
 #%% choose populations
 
 summary_paths, folders, colors= get_working_data_defaults(experimenters = ['Cibele'],
@@ -19,13 +22,6 @@ summary_paths, folders, colors= get_working_data_defaults(experimenters = ['Cibe
 
 if False:
     add_legend_to_plot(fig, folders, colors, loc = 'outside lower left') 
-
-#%%
-def create_figure(mosaic, figsize, hspace = 0, wspace = 0): 
-    fig= plt.figure(layout="constrained", figsize = figsize)
-    fig.get_layout_engine().set(hspace = hspace, wspace = wspace)
-    ax_dict = fig.subplot_mosaic(mosaic)
-    return fig, ax_dict
 
 #%%%%%%%%%%%%%%%% FLUORESCENCE LEVELS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

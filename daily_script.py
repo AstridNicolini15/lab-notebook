@@ -50,6 +50,12 @@ filename = '/home/user/DATA/Astrid/Cibele_data/PV-cells_WT_Young_V1/NWBs/2025_07
 
 Tunings = np.load('/home/user/DATA/Astrid/Cibele_data/summary/Tunings_PV-cells_WT_Adult_V1_contrast-1.0.npy', allow_pickle = True)
 
+test = 'slope'
+
+if test : 
+    print('1')
+else : 
+    print('2')
 
 #%% allen
 

@@ -1,17 +1,4 @@
-#%% 
-import os, sys
-import numpy as np
-
-
-os.chdir('/home/user/lab-notebook/astrid')
-sys.path.insert(0,'/home/user/lab-notebook/astrid')
-from general_tools.general_tools import *
-sys.path += ['./physion/src']
-import physion.utils.plot_tools as pt
-from physion.analysis.protocols.orientation_tuning import *
-from physion.analysis.protocols.contrast_sensitivity import *
-
-#%%
+from notebooks.arousal import compute_arousal_masks, check_presence_locomotion_values
 
 def get_summary_prefix_name(quantity, filtering_cond_name, special_dFoF_params) :
 

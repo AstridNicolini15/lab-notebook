@@ -1,6 +1,7 @@
-#%%
-from general_tools.general_tools import get_protocol_keys
 import numpy as np
+from general_tools.general_tools import get_protocol_keys
+from physion.analysis.read_NWB import scan_folder_for_NWBfiles, Data
+
 
 def check_presence_locomotion_values(data):
     if np.sum(data.running) == 0 : 

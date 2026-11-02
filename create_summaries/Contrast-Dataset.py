@@ -6,7 +6,7 @@ import os, sys , shutil
 import multiprocessing
 import numpy as np
 
-sys.path += "/home/user/lab-notebook/astrid/physion/src"
+sys.path += ["/home/user/lab-notebook/astrid/physion/src"]
 
 from physion.analysis.read_NWB\
                          import scan_folder_for_NWBfiles, Data
@@ -91,6 +91,9 @@ def process_file(filename, i, c, quantity, filtering_cond_name):
             Sensitivity['nROIs_original'] = data.original_nROIs
             Sensitivity['nROIs_final'] = data.nROIs
             Sensitivity['subject'] = data.nwbfile.subject.subject_id
+
+            if  dFoF_parameters['computed_neuropil_fact_method'] : #dFoF_parameters['roi_specific_neuropil_correction_factor'] or dFoF_parameters['with_computed_neuropil_fact'] : 
+                Sensitivity['neuropil_correction_factors'] = data.neuropil_correction_factor
 
             np.save(os.path.join(summary_folder, 'temp', 
                                  'Sensitivity-%s-%s-%i.npy' % (quantity, c, i)),

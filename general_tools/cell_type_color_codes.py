@@ -1,14 +1,8 @@
-#%%
-import numpy as np
-import os, sys 
-os.chdir('/home/user/lab-notebook/astrid')
-sys.path.insert(0,'/home/user/lab-notebook/astrid/physion/src')
-
 from matplotlib.colors import to_rgb
 import pandas as pd 
 import physion.utils.plot_tools as pt
 
-#%%
+
 
 data_from_list = ['Cibele']*13 + ['Taddy']*2
 
@@ -79,8 +73,7 @@ working_data_defaults = pd.DataFrame(data)
 def get_working_data_defaults(experimenters = ['Cibele'], 
                               folders_surnames = ['SST_WT'], 
                               color_with_grey = False, 
-                              alpha = 1,
-                              summary_path_list = False) : 
+                              alpha = 1) : 
 
 
     #correcting and checking input form 
@@ -111,7 +104,7 @@ def get_working_data_defaults(experimenters = ['Cibele'],
         colors = [(*c[:3], alpha) for c in colors]
 
     if color_with_grey : 
-        colors = [[c, 'lightgrey'] for c in colors]
+        colors = [[c, (*to_rgb('lightgrey'),1)] for c in colors]
 
     return summary_folder, folders, colors 
 
@@ -120,8 +113,7 @@ def reshape_colors_with(colors,
                         alpha = 1,
                        second_cond_grey = False,
                        second_cond_low_alpha = False, 
-                       second_cond_alpha = 0.3,
-                       grey_to_rgb = False) : 
+                       second_cond_alpha = 0.3) : 
 
     #check and initialisation
     if second_cond_grey & second_cond_low_alpha :
@@ -130,7 +122,7 @@ def reshape_colors_with(colors,
 
     if len(colors[0]) == 2  : 
         colors = [c[0] for c in colors] #keep only cell type color, remove control cond color
-        if (not second_cond_grey) & (not second_cond_low_alpha) & (not grey_to_rgb): 
+        if (not second_cond_grey) & (not second_cond_low_alpha) : 
             print('warning : second cond color removed')
 
     #do reshaping
@@ -138,13 +130,10 @@ def reshape_colors_with(colors,
         colors = [(*c[:3], alpha) for c in colors]
 
     if second_cond_grey : 
-        colors = [[c, 'lightgrey'] for c in colors]
+        colors = [[c, (*to_rgb('lightgrey'),1)] for c in colors]
 
     if second_cond_low_alpha : 
         colors = [[c, (*c[:3], second_cond_alpha)] for c in colors]
-
-    if grey_to_rgb : 
-        colors = [[c, (*to_rgb('lightgrey'),1)] for c in colors]
 
     return colors
 

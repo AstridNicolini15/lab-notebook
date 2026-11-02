@@ -1,11 +1,8 @@
 #%%
-from physion.analysis.read_NWB\
-                import scan_folder_for_NWBfiles, Data
+from physion.analysis.read_NWB import Data
 import numpy as np
 import matplotlib.pyplot as plt
 
-
-#%%
 
 
 def plot_file_photodiode_shift(filename):

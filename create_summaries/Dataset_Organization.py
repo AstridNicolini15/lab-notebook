@@ -2,13 +2,13 @@ import os
 import sys 
 
 folders = [
-    "PV-cells_WT_Adult_V1", 
+    #"PV-cells_WT_Adult_V1", 
     #"PV-cells_WT_Young_V1", 
     #"PV-cells_cond-GluN1-KO_Adult_V1", 
     #"PYR-SynGCaMP_WT_V1",
     #"PYR-cells_WT_Adult_V1",
     #"SST-cells_cond-GluN1-KO_Young_V1",
-    #"SST-cells_cond-GluN1-KO_Adult_V1",
+    "SST-cells_cond-GluN1-KO_Adult_V1",
     #"SST-cells_WT_Adult_V1",
     #"SST-cells_WT_Young_V1",
     #"Wild-Type",
@@ -21,12 +21,12 @@ folders = [
 base_path =  '/home/user/DATA/Astrid/Cibele_data'
 summary_folder = base_path + '/summary'
 
-quantity = 'dFoF' #'Deconvolved_correctedFluo' or 'Deconvolved', Zscore_correctedFluo'
-filtering_cond_name = None
-keep_all_orientations_significances = False
+quantity = 'dFoF' #'Deconvolved', 'Deconvolved_correctedFluo', Zscore_F0'...
+filtering_cond_name = None #'Rest' 
+sys.argv = {'computed_neuropil_fact_method' : 'slope'}
+
 #sys.argv = {#'roi_to_neuropil_fluo_inclusion_factor' : neuropil_inclusion_factor,
             #'neuropil_correction_factor' : neuropil_correction_factor,
-            #'with_computed_neuropil_fact' : True,
             #'computed_neuropil_fact_method' : 'slope'}
 
 # age intervals in Young

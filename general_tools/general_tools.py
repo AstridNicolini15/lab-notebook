@@ -2,8 +2,22 @@
 import os, sys 
 os.chdir('/home/user/lab-notebook/astrid')
 import numpy as np
+from scipy.stats import sem
 import itertools
 from create_summaries.Preprocessing_Settings import get_dFoF_params
+from notebooks.propagated_uncertainty import session_sem_with_indepedance_hypothesis_universal
+
+def get_uncertainty(Responses, uncertainty_sy, summaries = None): 
+    
+    if uncertainty_sy == 'std' : 
+        uncertainty_sy = np.nanstd(Responses, axis = 0)
+    elif uncertainty_sy == 'sem' : 
+        uncertainty_sy = sem(Responses, axis = 0, nan_policy = 'omit')
+    elif uncertainty_sy == 'propagated' : 
+        print('WARNING :  not implemented yet for tunings')
+        uncertainty_sy = session_sem_with_indepedance_hypothesis_universal(summaries)
+
+    return uncertainty_sy
 
 def get_protocol_keys(summary_protocol = 'Tunings') : 
 
@@ -66,7 +80,7 @@ def get_summary_names(folders, summary_paths, summary_protocols, summary_prefixe
 
             if item == 'young' : 
                 for interval in (15,19), (20,23), (24,27) : 
-                        summary_sufixe_names.append('_P%i-P%i_' % interval)
+                        summary_sufixe_names.append('_P%i-P%i' % interval)
 
         if not summary_prefixe_names : 
             summary_prefixe_names = ['']

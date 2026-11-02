@@ -1,13 +1,13 @@
 #%%
-import os, sys 
-os.chdir('/home/user/lab-notebook/astrid')
 import numpy as np 
 from scipy.stats import sem
+import string
+alphabet_upper = list(string.ascii_uppercase)
 
-from general_tools.propagated_uncertainty import *
+from notebooks.propagated_uncertainty import *
 from general_tools.general_tools import *
+from general_tools.cell_type_color_codes import *
 from create_summaries.Preprocessing_Settings import get_dFoF_params
-sys.path.insert(0,'/home/user/lab-notebook/astrid/physion/src')
 
 import physion.utils.plot_tools as pt
 from physion.analysis.episodes.build import EpisodeData
@@ -18,7 +18,6 @@ import physion
 
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-from matplotlib.colors import to_rgb
 
 
 #%%
@@ -60,13 +59,7 @@ def draw_tuning_curve(Tunings,
 
     ax.annotate(text = 'N= ' + str(n_cells), xy = xy, color = color, fontsize = fontsize, alpha = alpha)
 
-    if uncertainty_sy == 'std' : 
-        uncertainty_sy = np.nanstd(Responses, axis = 0)
-    elif uncertainty_sy == 'sem' : 
-        uncertainty_sy = sem(Responses, axis = 0, nan_policy = 'omit')
-    elif uncertainty_sy == 'propagation' : 
-        print('not implemented')
-        #uncertainty_sy = session_sem_with_indepedance_hypothesis_universal(Tunings)
+    uncertainty_sy = get_uncertainty(Responses, uncertainty_sy = uncertainty_sy)
 
     ax.errorbar(Tunings[0]['shifted_angle'], 
             np.nanmean(Responses, axis=0),
@@ -76,8 +69,6 @@ def draw_tuning_curve(Tunings,
             fmt = '.',
             color=color, 
             ms = ms)
-
-
 
 def draw_sensitivitie_curve(Sensitivities,
                             ax, 
@@ -96,10 +87,7 @@ def draw_sensitivitie_curve(Sensitivities,
 
     n_cells = np.sum([np.sum(np.sum(S['significant_pos'] + S['significant_neg'], axis = 1).astype(bool)) for S in Sensitivities]) #TO CHECKs
 
-    if uncertainty_sy == 'propagated' : 
-        uncertainty_sy = session_sem_with_indepedance_hypothesis_universal(Sensitivities)
-    elif uncertainty_sy == 'std' : 
-        uncertainty_sy = np.std(Responses, axis = 0)
+    uncertainty_sy = get_uncertainty(Responses, uncertainty_sy = uncertainty_sy)
 
     #draw
     lw = graph_width_dict['lw']
@@ -122,7 +110,7 @@ def plot_responses(ax,
                 alphas = None,
                 summary_protocol = 'Tunings',
                 clip_negative = True,
-                sensitivitie_uncertainty = 'propagated',
+                uncertainty_sy = 'sem',
                 grid = False,
                 title = '',
                 ylims = [0,1.05]) :
@@ -147,6 +135,7 @@ def plot_responses(ax,
                         alpha = alphas[i],
                         xy = xy, 
                         graph_width_dict = {'lw' : 3, 'ms' : 5, 'fontsize' : 10},
+                        uncertainty_sy = uncertainty_sy, 
                         clip_negative = clip_negative) 
 
 
@@ -158,7 +147,7 @@ def plot_responses(ax,
                         color = colors[i][j],
                         alpha =  alphas[i],
                         xy = xy,
-                        uncertainty_sy = sensitivitie_uncertainty,
+                        uncertainty_sy = uncertainty_sy,
                         graph_width_dict = {'lw' : 2, 'ms' : 3, 'fontsize' : 8})
 
     add_axis_labels_to_plot(ax, plot_type = summary_protocol)
@@ -284,6 +273,55 @@ def plot_mean_F_val(ax, folders, colors, F_value, summary_paths, summary_protoco
         ax.text(s=' N=\n'+str(n_cells_pop[i]),  x = x[i] - 0.1, y = ymax/22, rotation = 'horizontal', fontsize = 10, color = 'white')
 
 #%% 
+#---------PLOT INDIVIDUAL RESPONSES----------#
+def plot_individual_responses(summary_filename, summary_protocol, colors, ylims):
+
+    keys = get_protocol_keys(summary_protocol = summary_protocol)
+
+    for j, key in enumerate(keys) : 
+        summaries = np.load(summary_filename + '%s.npy' % key, allow_pickle=True) 
+
+        if j == 0 : #initialize the figure just once
+            mosaic = ""
+            grid_length = 5*((len(summaries)//5)+1)
+            for n in range(0,grid_length,5): 
+                row = "".join(alphabet_upper[n:n+5])
+                mosaic +=  row + '\n' 
+            fig, ax_dict = create_figure(mosaic, figsize = (25,25), hspace = 0.15, wspace = 0.15)
+            fig.suptitle(summary_filename.split('/')[-1], fontsize = 15)
+            colors = reshape_colors_with(colors, second_cond_low_alpha = True, second_cond_alpha=0.3)
+            for n in range(len(summaries),grid_length,1):
+                ax_dict[alphabet_upper[n]].axis('off')
+
+        print(colors[0][j])
+
+        for session in range(len(summaries)) : 
+            if summary_protocol == 'Tunings' : 
+                xy =  (100+(30*j),1)
+                draw_tuning_curve([summaries[session]],
+                        ax = ax_dict[alphabet_upper[session]], 
+                        color = colors[0][j],
+                        alpha = None,
+                        xy = xy, 
+                        graph_width_dict = {'lw' : 3, 'ms' : 5, 'fontsize' : 10},
+                        clip_negative = False) 
+
+            if summary_protocol == 'Sensitivities' : 
+                xy = (0.8+(0.1*j),0.05)
+                draw_sensitivitie_curve([summaries[session]],
+                        ax = ax_dict[alphabet_upper[session]], 
+                        color = colors[0][j],
+                        alpha =  None,
+                        xy = xy,
+                        graph_width_dict = {'lw' : 3, 'ms' : 5, 'fontsize' : 10})
+                
+            ax_dict[alphabet_upper[session]].set_title(summaries[session]['datafile'].split('/')[-1])
+            ax_dict[alphabet_upper[session]].set_ylim(ylims)
+            add_axis_labels_to_plot(ax_dict[alphabet_upper[session]], plot_type = summary_protocol)
+
+    return fig
+
+#%% 
 #---------SUPPORT FUNCTIONS----------#
 
 def add_axis_labels_to_plot(ax, plot_type = 'Tunings', fontsize = 13):
@@ -314,3 +352,8 @@ def add_legend_to_plot(ax, labels, colors, loc = 'lower left', bbox_to_anchor = 
     ax.legend(handles = handles, labels = labels, loc = loc, bbox_to_anchor = bbox_to_anchor, fontsize = fontsize)
 
 
+def create_figure(mosaic, figsize, hspace = 0, wspace = 0): 
+    fig= plt.figure(layout="constrained", figsize = figsize)
+    fig.get_layout_engine().set(hspace = hspace, wspace = wspace)
+    ax_dict = fig.subplot_mosaic(mosaic)
+    return fig, ax_dict

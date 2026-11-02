@@ -1,13 +1,8 @@
 #%% Tools necessary to create Tuning summaries with arousal cond, neuropil cond etc.
 
-import os, sys 
+import os
 import numpy as np
 import pandas as pd 
-
-os.chdir('/home/user/lab-notebook/astrid')
-sys.path += ['./physion/src']
-
-#%%
 
 def get_prefered_angles(prefered_angles_dataset, filename):
 
