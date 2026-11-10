@@ -1,0 +1,135 @@
+#%%
+
+
+
+
+#%% plot all session average raw and photodiode
+
+
+base_path = '/home/user/DATA/Astrid/Cibele_data/PV-cells_WT_Young_V1/NWBs/'
+
+filename = '2025_10_10-12-16-43.nwb'
+data = physion.analysis.read_NWB.Data(base_path + filename, verbose=False) 
+print(data.protocols)
+data.build_rawFluo()
+data.build_neuropil()
+data.build_photodiode()
+mean_raw = np.mean(data.rawFluo - data.neuropil, axis = 0)
+for plot_xlim in range (0,data.nwbfile.stimulus['time_start'].data[-1][0]-200, 200):
+
+    fig, ax = plt.subplots(2,1,figsize = (15,3))
+    ax[0].plot(data.t_rawFluo, mean_raw)
+    #ax[0].plot(data.t_rawFluo, np.mean(data.neuropil, axis = 0))
+    ax[1].plot(data.t_photodiode, data.photodiode, 'grey')
+    for time_start, duration in zip(data.nwbfile.stimulus['time_start'].data[:], data.nwbfile.stimulus['time_duration'].data[:]) : 
+        ax[0].axvspan(time_start[0], time_start[0] + duration[0], color='grey', alpha=0.3)
+        ax[1].axvspan(time_start[0], time_start[0] + duration[0], color='grey', alpha=0.3)
+
+    ax[0].set_ylabel('All roi \n average rawfluo')
+    ax[1].set_ylabel('photodiode')
+
+    for ax in [ax[0],ax[1]]:
+        ax.set_xlim(plot_xlim, plot_xlim +200)
+        ax.set_xlabel('time')
+
+#%%
+
+
+def plot_traces(data, roi, quantities = ['dFoF'], plot_photodiode = True): 
+
+    color_dict = {'dFoF' : 'limegreen', 'correctedFluo': 'green', 'rawFluo': 'black', 'neuropil' : 'red'}
+    for plot_xlim in range (0, data.nwbfile.stimulus['time_start'].data[-1][0]-200, 200):
+
+        fig, ax = plt.subplots(1 + plot_photodiode*1,1,figsize = (15,3))
+        for quantity in quantities : 
+            if roi == 'all' : 
+                fluo_trace = np.mean(getattr(data, quantity), axis = 0)
+            else : 
+                fluo_trace = getattr(data, quantity)[roi, : ]
+            ax[0].plot(getattr(data, 't_' + quantity), fluo_trace, color = color_dict[quantity], legend = quantity)
+
+        if plot_photodiode : 
+            ax[1].plot(data.t_photodiode, data.photodiode, 'grey')
+
+        for time_start, duration in zip(data.nwbfile.stimulus['time_start'].data[:], data.nwbfile.stimulus['time_duration'].data[:]) : 
+            ax[0].axvspan(time_start[0], time_start[0] + duration[0], color='grey', alpha=0.3)
+            ax[1].axvspan(time_start[0], time_start[0] + duration[0], color='grey', alpha=0.3)
+        
+        ax[0].legend()
+        ax[0].set_ylabel('roi n° ' + str(roi))
+        ax[1].set_ylabel('photodiode')
+
+        for ax in [ax[0],ax[1]]:
+            ax.set_xlim(plot_xlim, plot_xlim +200)
+            ax.set_xlabel('time')
+        plt.show()
+
+
+def plot_evoked_resp_through_stim(ep, roi, quantity):
+
+    fig, axes = plt.subplots(2, 8, figsize=(8*3, 2*3), layout = 'constrained')
+    axes = axes.flatten()
+    color_dict = {'dFoF' : 'limegreen', 'correctedFluo': 'green', 'rawFluo': 'black', 'neuropil' : 'red'}
+
+    if roi == 'all': 
+        trace = np.mean(getattr(ep, quantity), axis = 1)
+    else : 
+        trace = getattr(ep, quantity)[:,roi,:]
+
+    ymin, ymax = np.max(trace),np.min(trace) #set opposite extreme value to ensure it will be be changed and adapted for plot
+    for i in ep.index : 
+        trace_params_i = np.mean(trace[np.argwhere(ep.index == i),:], axis = 0)[0]
+        axes[i].plot(ep.t, trace_params_i, color = color_dict[quantity])
+        ymin = min(ymin, np.min(trace_params_i))
+        ymax = max(ymax, np.max(trace_params_i))
+
+    for i in ep.index :
+        axes[i].set_xlabel('time')
+        axes[i].set_xticks([0,2])
+        axes[i].set_xticks([ymin,(ymax-ymin)/2, ymax])
+        axes[i].set_ylabel('roi n° ' + str(roi) + '\n mean ' + quantity)
+        axes[i].set_ylim((ymin,ymax))
+    plt.show()
+
+
+def plot_cells_response(summary_filename, summary_protocol, session_number, colors, ylims):
+
+    keys = get_protocol_keys(summary_protocol = summary_protocol)
+    plotted_cells = 0
+    tot_n_cells = 1
+    while plotted_cells < tot_n_cells :
+        print(plotted_cells)
+        for j, key in enumerate(keys) : 
+            summaries = np.load(summary_filename + '%s.npy' % key, allow_pickle=True) 
+            session = summaries[session_number]
+
+            n_cells = len(session['Responses'])
+            if n_cells > 100 and tot_n_cells == 1: 
+                tot_n_cells = n_cells
+                n_cells = 100 
+            if j == 0 : #initialize the figure just once
+                fig, axes = plt.subplots(10, (n_cells//10)+1, figsize = (2*10,2*((n_cells//10)+1)), layout = 'constrained')
+                axes = axes.flatten()
+                fig.suptitle(session['datafile'].split('/')[-1], fontsize = 15)
+                for n in range(n_cells,((n_cells//10)+1)*10,1):
+                    axes[n].axis('off')
+
+            for cell in range(plotted_cells, plotted_cells + n_cells) : 
+                print(cell)
+                if summary_protocol == 'Tunings' : 
+                    print('to do')
+
+                if summary_protocol == 'Sensitivities' : 
+                    if np.sum(session['significant_pos'][cell,:] + session['significant_neg'][cell,:]).astype(bool) : 
+                        axes[cell].plot(session['contrast'], 
+                            session['Responses'][cell,:], 
+                            color=colors[0][j])
+                                        
+                axes[cell].set_title('cell n°' + str(cell))
+                axes[cell].set_ylim(ylims)
+        plotted_cells += n_cells
+        add_axis_labels_to_plot(axes[0], plot_type = summary_protocol, fontsize = 10)
+    return fig
+
+
+
