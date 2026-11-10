@@ -15,7 +15,8 @@ from physion.analysis.protocols.orientation_tuning\
                 import compute_tuning_response_per_cells
 from dataset_tools import (get_summary_prefix_name, 
                                     get_filtering_cond, 
-                                    build_filtering_cond_quantities)
+                                    build_filtering_cond_quantities,
+                                    build_quantity)
 from tuning_dataset_tools import *
 
 parallelized, debug = False, False 
@@ -51,15 +52,8 @@ def process_file(filename, i, c, quantity, filtering_cond_name):
     data = Data(filename, verbose=False)
     protocol_name=[p for p in data.protocols if '8orientation' in p][0]
 
-    data.build_dFoF(**dFoF_parameters, verbose=False)
-    
-    if quantity[:6] == 'Zscore' :
-        data.build_Zscore(quantity[7:])
-
-    elif quantity[:11] == 'Deconvolved':
-        data.build_Deconvolved(Tau = 0.8, quantity = quantity[12:])
-        stat_test_props['interval_post']=[0.0, 1.0]  
-        quantity = quantity[:11]             
+    data, quantity, dFoF_parameters, stat_test_props = build_quantity(data, quantity, dFoF_parameters, stat_test_props)
+           
 
     quantities = [quantity]
     prefered_angles = None

@@ -17,14 +17,15 @@ from physion.analysis.protocols.contrast_sensitivity\
 from physion.analysis.episodes.build import EpisodeData
 from dataset_tools import (get_summary_prefix_name, 
                             get_filtering_cond, 
-                            build_filtering_cond_quantities)
+                            build_filtering_cond_quantities,
+                            build_quantity)
 from contrast_dataset_tools import *
 
 parallelized, debug = False, False 
 
 # load the dataset locations:
 from Dataset_Organization import datasets_func, quantity, summary_folder, filtering_cond_name
-datasets = datasets_func('angle', [0., 90.])
+datasets = datasets_func('angle', [0.0, 90.])
 
 from Preprocessing_Settings import get_dFoF_params, get_stat_test_props
 
@@ -46,22 +47,13 @@ def process_file(filename, i, c, quantity, filtering_cond_name):
 
     # statistical test for visually-evoked-responses
     stat_test_props= get_stat_test_props(c)
-
-
     response_significance_threshold=5e-2
 
     print('%i) ' % (i+1), 'analyzing file: %s  [...] ' % filename)
     data = Data(filename, verbose=False)
     protocol_name=[p for p in data.protocols if '8contrast' in p][0]
-    data.build_dFoF(**dFoF_parameters, verbose=False)
 
-    if quantity[:6] == 'Zscore' :
-        data.build_Zscore(quantity[7:])
-
-    if quantity[:11] == 'Deconvolved':
-        #setattr(data, quantity, data.correctedFluo - data.correctedFluo0)
-        data.build_Deconvolved(Tau = 1.5, quantity = quantity[12:])
-        stat_test_props['interval_post']=[0.0, 1.0] 
+    data, quantity, dFoF_parameters, stat_test_props = build_quantity(data, quantity, dFoF_parameters, stat_test_props)
 
     quantities = [quantity]
 
@@ -129,7 +121,7 @@ if __name__=='__main__':
 
         c = list(datasets.keys())[n]
 
-        table = datasets[c]['datafolder'].replace('NWBs', 'DataTable.xlsx')
+        #table = datasets[c]['datafolder'].replace('NWBs', 'DataTable.xlsx')
 
         #dataset_table, subjects_table, analysis =\
         #        read_spreadsheet(table, get_metadata_from='table')
@@ -142,6 +134,56 @@ if __name__=='__main__':
         print()
 
         DATASET = scan_folder_for_NWBfiles(datasets[c]['datafolder'])
+        # filenames = [\
+        #     '2024_08_23-14-01-41',
+        #     '2024_08_23-14-26-50',
+        #     '2024_08_23-15-19-10',
+        #     '2024_08_23-15-44-18',
+        #     '2024_08_27-10-27-32',
+        #     '2024_08_27-10-52-11',
+        #     '2024_08_27-11-16-53',
+        #     '2024_08_27-11-45-06',
+        #     '2024_08_27-12-21-14',
+        #     '2024_08_27-12-46-41',
+        #     '2024_08_27-14-30-18',
+        #     '2024_08_27-15-19-30',
+        #     '2024_08_27-15-44-31',
+        #     '2024_08_27-16-11-31',
+        #     '2024_08_28-13-59-30',
+        #     '2024_08_28-14-26-46',
+        #     '2024_08_28-15-01-17',
+        #     '2024_08_28-15-26-20',
+        #     '2024_08_28-15-51-23',
+        #     '2024_08_28-16-16-08',
+        #     '2024_08_29-14-06-46',
+        #     '2024_08_29-14-32-16',
+        #     '2024_08_29-14-57-04',
+        #     '2024_08_29-15-24-06',
+        #     '2024_09_11-15-33-02',
+        #     '2024_09_11-16-06-39',
+        #     '2024_09_11-16-33-38',
+        #     '2024_09_11-17-04-46',
+        #     '2024_12_26-13-53-20',
+        #     '2024_12_26-14-19-20',
+        #     '2024_12_26-14-44-22',
+        #     '2024_12_26-15-19-14',
+        #     '2024_12_26-15-44-29',
+        #     '2025_01_06-14-03-07',
+        #     '2025_01_06-14-28-07',
+        #     '2025_01_06-15-03-22',
+        #     '2025_01_06-15-31-32',
+        #     '2025_01_06-15-58-15',
+        #     '2025_01_06-16-23-43',
+        #     '2025_01_17-10-36-55',
+        #     '2025_01_17-11-06-52',
+        #     '2025_01_17-11-32-35',
+        #     '2025_01_23-13-19-27',
+        #     '2025_01_23-14-07-05',
+        #     '2025_02_03-14-40-35',
+        #     '2025_02_03-15-01-59',
+        #     '2025_02_03-15-23-15',
+        #     ]
+        # DATASET = scan_folder_for_NWBfiles(datasets[c]['datafolder'], from_filenames=filenames)
         
         # FILTER
         # 1) protocol type: contrast sensitivity
@@ -199,7 +241,8 @@ if __name__=='__main__':
 
             # # saving data
             summary_prefix_name = get_summary_prefix_name(quantity, filtering_cond_name, special_dFoF_params)
-            
+            print(summary_prefix_name)
+
             np.save(os.path.join(summary_folder, summary_prefix_name + 'Sensitivities_%s.npy' % c), 
                     Sensitivities)
 
@@ -213,7 +256,7 @@ if __name__=='__main__':
 
         print('-----------------------------------------------------------------')
         print('=================================================================')
-    # shutil.rmtree(os.path.join(summary_folder, 'temp'))
+    #shutil.rmtree(os.path.join(summary_folder, 'temp'))
 
 # %%
 #f = '/home/user/CURATED/Cibele/SST-cells_cond-GluN1-KO_Adult_V1/NWBs/2026_02_18-14-42-43.nwb'

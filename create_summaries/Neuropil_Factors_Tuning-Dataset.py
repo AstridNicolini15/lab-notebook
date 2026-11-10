@@ -1,8 +1,8 @@
 #%%
 import sys                   
 
-neuropil_inclusion_factors = [2] #[1.15,2,3,4] 
-neuropil_correction_factors = [0.85, 1] #[0,0.15,0.3,0.55,0.7, 0.85,1] 
+neuropil_inclusion_factors = [0] #[1.15,2,3,4] 
+neuropil_correction_factors = [1] #[0,0.15,0.3,0.55,0.7, 0.85,1] 
 
 for neuropil_inclusion_factor in neuropil_inclusion_factors : 
 

@@ -42,3 +42,35 @@ def get_filtering_cond(filtering_cond_name, Episodes):
     return filtering_cond
 
 
+
+def build_quantity(data, quantity, dFoF_parameters, stat_test_props):
+
+    if '_' in quantity : #ie calculation on top of a quantity
+        quantity_type = quantity.split('_')[0]
+        quantity = quantity.split('_')[1]
+    else : 
+        quantity_type = None
+
+    if quantity in ['correctedFluo', 'F0'] : 
+        dFoF_parameters['with_correctedFluo_and_F0'] = True
+
+    if quantity =='dFoF' :
+        data.build_dFoF(**dFoF_parameters, verbose=False)
+    elif quantity == 'correctedFluo' :
+        data.build_correctedFluo(specific_time_sampling=None, interpolation='linear',
+                            neuropil_correction_factor=dFoF_parameters['neuropil_correction_factor'],
+                            verbose=False)
+    #or build only the quantity of interests
+    #getattr(data, 'build_%s' % quantity)(quantity, **dFoF_parameters)
+
+    #build the calculation on top of the quantity if needed
+    if quantity_type is not None :
+        if quantity_type == 'Zscore' :
+            data.build_Zscore(quantity)
+
+        if quantity_type == 'Deconvolved':
+            data.build_Deconvolved(Tau = 1.5, quantity = quantity)
+            stat_test_props['interval_post']=[0.0, 1.0] 
+
+    return data, quantity, dFoF_parameters, stat_test_props
+

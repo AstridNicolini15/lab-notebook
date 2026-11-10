@@ -8,6 +8,7 @@ def get_dFoF_params(dataset, special_dFoF_params = None):
                 percentile=5., # percent
                 sliding_window = 5*60, # seconds
                 computed_neuropil_fact_method = None, 
+                with_correctedFluo_and_F0 = True,
         )
     
     if dataset[:4]=='PYR-':

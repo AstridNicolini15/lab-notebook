@@ -16,8 +16,8 @@ import matplotlib.pyplot as plt
 import physion
 
 from general_tools.cell_type_color_codes import *
-from general_tools.plot_general_tools import *
-#%% TEMPLATES
+from general_tools.general_plot_tools import *
+#%% TEMPLATE
 
 filename = '/home/user/DATA/Astrid/Cibele_data/PV-cells_WT_Adult_V1/NWBs/2024_03_22-14-35-26.nwb' #contrasts
 filename = '/home/user/DATA/Astrid/Cibele_data/SST-cells_cond-GluN1-KO_Adult_V1/NWBs/2026_03_06-15-14-09.nwb' #orientations
@@ -31,8 +31,7 @@ dFoF_parameters = dict(\
         method_for_F0 = 'sliding_percentile',
         percentile=5., # percent
         sliding_window = 5*60, # seconds
-        with_computed_neuropil_fact=True,
-        computed_neuropil_fact_method='slope',
+        computed_neuropil_fact_method=None,
 
 )
 print(data.protocols)

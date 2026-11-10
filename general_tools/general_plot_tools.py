@@ -30,10 +30,11 @@ def draw_tuning_curve(Tunings,
                     xy = (0,0),
                     uncertainty_sy = 'sem',
                     graph_width_dict = {'lw' : 2, 'ms' : 3, 'fontsize' : 7},
-                    clip_negative = False) : 
+                    clip_negative = False,
+                    average_by = 'sessions') : 
     
 
-    Responses = get_tuning_responses(Tunings, average_by='sessions') #return only significant resp
+    Responses = get_tuning_responses(Tunings, average_by=average_by) #return only significant resp
     Responses = [r/r[1] for r in Responses]
 
     if clip_negative : 
@@ -76,22 +77,24 @@ def draw_sensitivitie_curve(Sensitivities,
                             alpha = 1,
                             xy = (0,0),
                             uncertainty_sy = 'std',
-                            graph_width_dict = {'lw' : 2, 'ms' : 3, 'fontsize' : 4}
+                            graph_width_dict = {'lw' : 2, 'ms' : 3, 'fontsize' : 4},
+                            average_by = 'sessions', 
                             ):
 
 
     #get values
     #Responses = get_responses(Sensitivities)
-    Responses = [np.mean(S['Responses'][np.sum(S['significant_pos'] + S['significant_neg'], axis = 1).astype(bool)], axis=0)\
+    if average_by == 'sessions' :
+        Responses = [np.mean(S['Responses'][np.sum(S['significant_pos'] + S['significant_neg'], axis = 1).astype(bool)], axis=0)\
                                 for S in Sensitivities] #get significant responses
-
+    elif average_by == 'cells' : 
+        Responses = np.concatenate([S['Responses'][np.sum(S['significant_pos'] + S['significant_neg'], axis = 1).astype(bool)]\
+                                    for S in Sensitivities])
     n_cells = np.sum([np.sum(np.sum(S['significant_pos'] + S['significant_neg'], axis = 1).astype(bool)) for S in Sensitivities]) #TO CHECKs
 
     uncertainty_sy = get_uncertainty(Responses, uncertainty_sy = uncertainty_sy)
 
     #draw
-    lw = graph_width_dict['lw']
-    ms = graph_width_dict['ms']
     fontsize = graph_width_dict['fontsize']
 
     pt.plot(Sensitivities[0]['contrast'], 
@@ -113,7 +116,9 @@ def plot_responses(ax,
                 uncertainty_sy = 'sem',
                 grid = False,
                 title = '',
-                ylims = [0,1.05]) :
+                ylims = [0,1.05],
+                xy_base = None,
+                average_by = 'sessions') :
 
     if alphas == None : 
         alphas = [None for i in range(len(summary_filenames))]
@@ -127,8 +132,9 @@ def plot_responses(ax,
             summaries = np.load(summary_filename + '%s.npy' % key, allow_pickle=True) 
             
             if summary_protocol == 'Tunings' : 
-
-                xy =  (100+(30*j),1-(0.03*i))
+                if xy_base == None :
+                    xy_base = (100,1)
+                xy =  (xy_base[0]+(30*j),xy_base[1]-(0.03*i))
                 draw_tuning_curve(summaries,
                         ax = ax, 
                         color = colors[i][j],
@@ -136,19 +142,23 @@ def plot_responses(ax,
                         xy = xy, 
                         graph_width_dict = {'lw' : 3, 'ms' : 5, 'fontsize' : 10},
                         uncertainty_sy = uncertainty_sy, 
-                        clip_negative = clip_negative) 
+                        clip_negative = clip_negative,
+                        average_by = average_by) 
 
 
             elif summary_protocol == 'Sensitivities' : 
 
-                xy = (0.05+(0.1*j),0.65-(0.04*i))
+                if xy_base == None :
+                    xy_base = (0.05,0.65)
+                xy = (xy_base[0]+(0.1*j),xy_base[1]-(0.04*i))
                 draw_sensitivitie_curve(summaries,
                         ax = ax, 
                         color = colors[i][j],
                         alpha =  alphas[i],
                         xy = xy,
                         uncertainty_sy = uncertainty_sy,
-                        graph_width_dict = {'lw' : 2, 'ms' : 3, 'fontsize' : 8})
+                        graph_width_dict = {'lw' : 2, 'ms' : 3, 'fontsize' : 8},
+                        average_by = average_by)
 
     add_axis_labels_to_plot(ax, plot_type = summary_protocol)
 

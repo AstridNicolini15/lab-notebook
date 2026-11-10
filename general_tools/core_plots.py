@@ -16,7 +16,7 @@ from notebooks.arousal import *
 #%% choose populations
 
 summary_paths, folders, colors= get_working_data_defaults(experimenters = ['Cibele'],
-                                                        folders_surnames = ['SST_WT'], 
+                                                        folders_surnames = ['PYR_WT'], 
                                                         color_with_grey=True)
 
 

@@ -6,7 +6,7 @@ import physion.utils.plot_tools as pt
 
 data_from_list = ['Cibele']*13 + ['Taddy']*2
 
-base_path = ["/home/user/DATA/Astrid/Cibele_data"]*13 + ["/home/user/DATA/Astrid/Taddy_data/OneDrive_1_9-3-2026"]*2
+base_path = ["/home/user/DATA/Astrid/Cibele_data/newNWBs-Adult"]*13 + ["/home/user/DATA/Astrid/Taddy_data/OneDrive_1_9-3-2026"]*2
 
 folders = [
     "SST-cells_WT_Adult_V1",

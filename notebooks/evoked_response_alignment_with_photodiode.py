@@ -65,37 +65,3 @@ def plot_file_photodiode_shift(filename):
     
     return fig 
 
-
-
-
-
-
-#%% plot all session average raw and photodiode
-
-
-base_path = '/home/user/DATA/Astrid/Cibele_data/SST-cells_cond-GluN1-KO_Adult_V1/NWBs/'
-
-filename = '2026_03_05-16-07-55.nwb'
-data = physion.analysis.read_NWB.Data(base_path + filename, verbose=False) 
-print(data.protocols)
-data.build_rawFluo()
-#data.build_neuropil()
-data.build_photodiode()
-mean_raw = np.mean(data.rawFluo, axis = 0)
-for plot_xlim in range (0,data.nwbfile.stimulus['time_start'].data[-1][0]-200, 200):
-
-    fig, ax = plt.subplots(2,1,figsize = (15,3))
-    ax[0].plot(data.t_rawFluo, mean_raw)
-    #ax[0].plot(data.t_rawFluo, np.mean(data.neuropil, axis = 0))
-    ax[1].plot(data.t_photodiode, data.photodiode, 'grey')
-    for time_start, duration in zip(data.nwbfile.stimulus['time_start'].data[:], data.nwbfile.stimulus['time_duration'].data[:]) : 
-        ax[0].axvspan(time_start[0], time_start[0] + duration[0], color='grey', alpha=0.3)
-        ax[1].axvspan(time_start[0], time_start[0] + duration[0], color='grey', alpha=0.3)
-
-    ax[0].set_ylabel('All roi \n average rawfluo')
-    ax[1].set_ylabel('photodiode')
-
-    for ax in [ax[0],ax[1]]:
-        ax.set_xlim(plot_xlim, plot_xlim +200)
-        ax.set_xlabel('time')
-
